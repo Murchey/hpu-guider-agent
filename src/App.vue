@@ -9,11 +9,10 @@
           :ellipsis="false"
           :router="false"
           class="nav-menu"
+          @select="handleMenuSelect"
         >
           <el-menu-item index="1">首页</el-menu-item>
           <el-menu-item index="2">AI 对话</el-menu-item>
-          <el-menu-item index="3">知识库</el-menu-item>
-          <el-menu-item index="4">设置</el-menu-item>
         </el-menu>
         
         <div class="header-right">
@@ -25,90 +24,107 @@
           />
           <el-button 
             type="danger" 
-            :icon="Delete" 
-            circle 
+            size="small"
             @click="clearChat"
-            title="清空对话"
-          />
+            title="清空对话">
+            清空聊天内容
+          </el-button>
         </div>
       </el-header>
       
       <el-container class="chat-container">
         <el-container>
-          <!-- 对话内容 -->
-          <el-main class="chat-main" ref="mainRef">
-            <div class="messages-wrapper">
-              <!-- 欢迎提示 -->
-              <div v-if="messages.length === 0" class="welcome-tip">
-                <el-empty :description="welcomeMessage">
-                  <el-tag type="success" effect="dark">已连接: {{ currentProvider }}</el-tag>
-                </el-empty>
-              </div>
-              
-              <!-- 消息列表 -->
-              <div
-                v-for="(msg, index) in messages"
-                :key="index"
-                class="message-item"
-                :class="msg.role"
-              >
-                <div class="message-avatar">
-                  <el-avatar :size="40" :icon="msg.role === 'user' ? User : Service" />
-                </div>
-                <div class="message-content">
-                  <div class="message-role">
-                    {{ msg.role === 'user' ? '你' : 'HPU智能导游' }}
-                  </div>
-                  <el-card class="message-card" :class="msg.role">
-                    <div class="message-text" v-html="formatMessage(msg.content)"></div>
-                  </el-card>
-                </div>
-              </div>
-              
-              <!-- 加载状态 -->
-              <div v-if="isLoading" class="message-item assistant">
-                <div class="message-avatar">
-                  <el-avatar :size="40" :icon="Service" />
-                </div>
-                <div class="message-content">
-                  <el-card class="message-card loading-card">
-                    <el-icon class="loading-icon"><Loading /></el-icon>
-                    <span>AI 正在思考中...</span>
-                  </el-card>
-                </div>
-              </div>
+          <!-- 首页内容 -->
+          <div v-if="activeIndex === '1'" class="home-page">
+            <div class="welcome-container">
+              <h1 class="welcome-title">WELCOME</h1>
+              <p class="welcome-subtitle">HPU智能导游系统</p>
+              <el-button 
+                type="primary" 
+                size="large" 
+                @click="activeIndex = '2'"
+                class="enter-chat-btn">
+                开始对话
+              </el-button>
             </div>
-          </el-main>
+          </div>
           
-          <!-- 输入区域 -->
-          <el-footer class="chat-footer">
-            <div class="input-wrapper">
-              <div class="input-area">
-                <el-input
-                  v-model="inputText"
-                  type="textarea"
-                  :autosize="{ minRows: 2, maxRows: 6 }"
-                  placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
-                  :disabled="isLoading"
-                  @keydown.shift.enter.prevent
-                  @keydown.enter.exact.prevent="handleSend"
-                />
-                <el-button 
-                  type="primary" 
-                  :icon="Promotion" 
-                  :loading="isLoading"
-                  :disabled="!inputText.trim() || isLoading"
-                  @click="handleSend"
-                  class="send-btn"
+          <!-- AI对话内容 -->
+          <div v-else-if="activeIndex === '2'" class="ai-chat-container">
+            <el-main class="chat-main" ref="mainRef">
+              <div class="messages-wrapper">
+                <!-- 欢迎提示 -->
+                <div v-if="messages.length === 0" class="welcome-tip">
+                  <el-empty :description="welcomeMessage">
+                    <el-tag type="success" effect="dark">已连接: {{ currentProvider }}</el-tag>
+                  </el-empty>
+                </div>
+                
+                <!-- 消息列表 -->
+                <div
+                  v-for="(msg, index) in messages"
+                  :key="index"
+                  class="message-item"
+                  :class="msg.role"
                 >
-                  发送
-                  <template #suffix>
-                    {{ sendHotkeyText }}
-                  </template>
-                </el-button>
+                  <div class="message-avatar">
+                    <el-avatar :size="40" :icon="msg.role === 'user' ? User : Service" />
+                  </div>
+                  <div class="message-content">
+                    <div class="message-role">
+                      {{ msg.role === 'user' ? '你' : 'HPU智能导游' }}
+                    </div>
+                    <el-card class="message-card" :class="msg.role">
+                      <div class="message-text" v-html="formatMessage(msg.content)"></div>
+                    </el-card>
+                  </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div v-if="isLoading" class="message-item assistant">
+                  <div class="message-avatar">
+                    <el-avatar :size="40" :icon="Service" />
+                  </div>
+                  <div class="message-content">
+                    <el-card class="message-card loading-card">
+                      <el-icon class="loading-icon"><Loading /></el-icon>
+                      <span>AI 正在思考中...</span>
+                    </el-card>
+                  </div>
+                </div>
               </div>
-            </div>
-          </el-footer>
+            </el-main>
+            
+            <!-- 输入区域 -->
+            <el-footer class="chat-footer">
+              <div class="input-wrapper">
+                <div class="input-area">
+                  <el-input
+                    v-model="inputText"
+                    type="textarea"
+                    :autosize="{ minRows: 2, maxRows: 6 }"
+                    placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
+                    :disabled="isLoading"
+                    @keydown.shift.enter.prevent
+                    @keydown.enter.exact.prevent="handleSend"
+                  />
+                  <el-button 
+                    type="primary" 
+                    :icon="Promotion" 
+                    :loading="isLoading"
+                    :disabled="!inputText.trim() || isLoading"
+                    @click="handleSend"
+                    class="send-btn"
+                  >
+                    发送
+                    <template #suffix>
+                      {{ sendHotkeyText }}
+                    </template>
+                  </el-button>
+                </div>
+              </div>
+            </el-footer>
+          </div>
         </el-container>
       </el-container>
     </el-container>
@@ -160,11 +176,7 @@ import {
   Service,
   Promotion, 
   Loading,
-  Setting,
-  Sunny,
-  Moon,
-  InfoFilled,
-  Plus
+  Setting
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -175,7 +187,7 @@ const inputText = ref('')
 const isLoading = ref(false)
 const showSettings = ref(false)
 const mainRef = ref(null)
-const activeIndex = ref('2')
+const activeIndex = ref('1')  // 确保默认显示首页
 
 // 暗黑模式状态 - 默认设置为true，但不再提供切换功能
 const darkMode = ref(true)
@@ -231,6 +243,11 @@ const welcomeMessage = computed(() => {
 })
  
 // ==================== 方法 ====================
+
+// 处理菜单选择
+const handleMenuSelect = (index) => {
+  activeIndex.value = index
+}
 
 // 开始新对话
 const startNewChat = () => {
@@ -445,17 +462,18 @@ onMounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background-color: #0D1117;
 }
 
 /* 确保暗黑模式生效 */
 .chat-wrapper.dark {
-  background-color: #1d1e1f;
+  background-color: #0D1117;
 }
 
 .layout-container {
   height: 100%;
   min-height: 600px;
+  background-color: #0D1117;
 }
 
 /* 导航栏样式 */
@@ -463,24 +481,83 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(22, 33, 62, 0.95);
-  border-bottom: 1px solid #0f3460;
+  background: #0D1117;
   padding: 0 20px;
   height: 60px;
   flex-shrink: 0;
+  line-height: 60px;
+  position: relative;
+  z-index: 10; /* 确保导航栏在最顶层 */
 }
 
 .nav-menu {
   flex: 1;
   max-width: 600px;
   border: none;
+  background: #0D1117;
+  height: 60px;
+  line-height: 60px;
+  overflow: visible;
+  position: relative;
+}
+
+/* 隐藏Element Plus水平菜单的所有默认边框样式 */
+.nav-menu :deep(.el-menu) {
+  border-bottom: none !important;
   background: transparent;
+  border: none !important;
+}
+
+.nav-menu :deep(.el-menu--horizontal) {
+  border-bottom: none !important;
+  border: none !important;
+  height: 60px;
+  line-height: 60px;
+}
+
+/* 针对菜单项的样式 */
+.nav-menu :deep(.el-menu--horizontal > .el-menu-item),
+.nav-menu :deep(.el-menu--horizontal > .el-sub-menu) {
+  border-bottom: none !important;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* 彻底移除菜单项之间的分割线 */
+.nav-menu :deep(.el-menu--horizontal > .el-menu-item:not(:first-child)::before),
+.nav-menu :deep(.el-menu--horizontal > .el-sub-menu:not(:first-child)::before) {
+  display: none !important;
+}
+
+/* 确保没有任何伪元素产生分割线 */
+.nav-menu :deep(*)::before,
+.nav-menu :deep(*)::after {
+  display: none !important;
+  border: none !important;
+  content: none !important;
+}
+
+/* 确保菜单项样式纯净 */
+.nav-menu :deep(.el-menu--horizontal > .el-menu-item) {
+  margin-right: 10px;
+  padding: 0 10px !important;
+  border: none !important;
+}
+
+.nav-menu :deep(.el-menu--horizontal > .el-menu-item.is-active) {
+  border-bottom: none !important;
+  background-color: transparent;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 15px;
+  height: 60px;
+  display: flex;
+  align-items: center;
 }
 
 /* 主聊天容器 */
@@ -490,6 +567,9 @@ onMounted(() => {
   flex-direction: column;
   height: calc(100vh - 60px);
   overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* 聊天主区域 */
@@ -500,19 +580,26 @@ onMounted(() => {
   background: transparent;
   min-height: 0;
   height: 100%;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .messages-wrapper {
   max-width: 900px;
   margin: 0 auto;
   height: 100%;
+  width: 100%;
 }
 
-.welcome-tip {
-  margin-top: 100px;
+.ai-chat-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  flex: 1;
 }
 
 /* 消息样式 */
@@ -521,6 +608,9 @@ onMounted(() => {
   gap: 15px;
   margin-bottom: 20px;
   animation: fadeIn 0.3s ease;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .message-item.user {
@@ -532,7 +622,7 @@ onMounted(() => {
 }
 
 .message-content {
-  max-width: 70%;
+  max-width: calc(100% - 55px);  /* 55px = 头像宽度40px + 间距15px */
   flex: 1;
 }
 
@@ -602,16 +692,54 @@ onMounted(() => {
 }
 
 .chat-wrapper.dark .nav-header {
-  background: #16213e;
-  border-bottom-color: #0f3460;
+  background: #0D1117;
+  border-bottom: none;
+  box-shadow: none;
+  position: relative;
+  z-index: 10;
 }
 
 .chat-wrapper.dark .nav-menu {
-  background: #16213e;
+  background: #0D1117;
+  border-bottom: none;
+}
+
+.chat-wrapper.dark .nav-menu :deep(.el-menu) {
+  background: transparent;
+}
+
+.chat-wrapper.dark .nav-menu :deep(.el-menu--horizontal > .el-menu-item) {
+  color: #e4e7ed;
+}
+
+.chat-wrapper.dark .nav-menu :deep(.el-menu--horizontal > .el-menu-item.is-active) {
+  color: #409eff;
+  background-color: transparent;
+}
+
+/* 暗黑模式下确保分割线被彻底移除 */
+.chat-wrapper.dark .nav-menu :deep(.el-menu--horizontal > .el-menu-item:not(:first-child)::before),
+.chat-wrapper.dark .nav-menu :deep(.el-menu--horizontal > .el-sub-menu:not(:first-child)::before) {
+  display: none !important;
+}
+
+.chat-wrapper.dark .nav-menu :deep(*)::before,
+.chat-wrapper.dark .nav-menu :deep(*)::after {
+  display: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  content: none !important;
+}
+
+/* 额外确保水平菜单的边框被移除 */
+.chat-wrapper.dark .nav-menu :deep(.el-menu--horizontal) {
+  border-bottom: none !important;
+  border: none !important;
 }
 
 .chat-wrapper.dark .chat-footer {
-  background: #16213e;
+  background: #0D1117;
   border-top-color: #0f3460;
 }
 
@@ -619,6 +747,20 @@ onMounted(() => {
   background: #1d2a4d;
   border-color: #0f3460;
   color: #e4e7ed;
+}
+
+.chat-wrapper.dark .welcome-title {
+  color: #8bb9ff;
+}
+
+.chat-wrapper.dark .welcome-subtitle {
+  color: #a3a6ad;
+}
+
+.chat-wrapper.dark .enter-chat-btn {
+  background-color: #409eff;
+  border-color: #409eff;
+  color: #fff;
 }
 
 /* 加载状态 */
@@ -646,12 +788,10 @@ onMounted(() => {
 
 /* 底部输入区 */
 .chat-footer {
-  background: rgba(22, 33, 62, 0.95);
-  border-top: 1px solid #0f3460;
+  background: #0D1117;
   padding: 15px 20px;
   flex-shrink: 0;
-  height: auto;
-  min-height: 120px; /* 确保底部区域有足够的高度 */
+  min-height: 120px;
 }
 
 .input-wrapper {
@@ -660,12 +800,16 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  width: 100%;
 }
 
 .input-area {
   display: flex;
   gap: 15px;
   align-items: flex-end;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .input-area :deep(.el-textarea__inner) {
@@ -673,10 +817,12 @@ onMounted(() => {
   border-color: #0f3460;
   color: #e4e7ed;
   font-size: 15px;
+  flex: 1;  /* 让输入框占据可用空间 */
 }
 
 .input-area :deep(.el-textarea__inner:focus) {
   border-color: #409eff;
+  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.3);
 }
 
 .send-btn {
@@ -713,10 +859,12 @@ onMounted(() => {
   
   .input-area {
     flex-direction: column;
+    gap: 10px;
   }
   
   .input-area :deep(.el-textarea__inner) {
     min-height: 100px;
+    width: 100%;
   }
   
   .send-btn {
@@ -729,5 +877,48 @@ onMounted(() => {
   .chat-footer {
     min-height: 130px; /* 移动端确保底部区域足够高 */
   }
+  
+  .message-content {
+    max-width: calc(100% - 55px);
+  }
+}
+
+.home-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 60vh;
+  width: 100%;
+}
+
+.welcome-container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcome-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #409eff;
+  margin: 0;
+  text-align: center;
+}
+
+.welcome-subtitle {
+  font-size: 20px;
+  color: #909399;
+  margin: 0;
+  text-align: center;
+}
+
+.enter-chat-btn {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 18px;
+  border-radius: 8px;
 }
 </style>
