@@ -11,6 +11,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@tsconfig/node24": "^24.0.4",
+    "@vueuse/core": "^14.2.1",
     "axios": "^1.13.6",
     "element-plus": "^2.13.5",
     "vue": "^3.4.21"
