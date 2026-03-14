@@ -283,7 +283,38 @@ const handleSend = async () => {
 
 onMounted(() => {
   loadSettings()
+  checkAndSendUserProfile()
 })
+
+const checkAndSendUserProfile = () => {
+  const savedForm = localStorage.getItem('user-profile-form')
+  if (savedForm) {
+    try {
+      const formData = JSON.parse(savedForm)
+      localStorage.removeItem('user-profile-form')
+      
+      const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：
+                      \n\n1. MBTI性格类型（MBTIPersonalityType）: ${formData.MBTIPersonalityType || '未填写'}\n
+                      2. 文化价值观倾向（CulturalValueOrientation）: ${formData.CulturalValueOrientation || '未填写'}\n
+                      3. 历史旅行类型（HistorialTravelType）: ${formData.HistorialTravelType || '未填写'}\n
+                      4. 决策参考渠道（DecisionReferenceChannel）: ${formData.DecisionReferenceChannel || '未填写'}\n
+                      5. 文化偏好类型（CulturalPreferenceType）: ${formData.CulturalPreferenceType || '未填写'}\n
+                      6. 风险偏好程度（RiskPreferenceLevel）: ${formData.RiskPreferenceLevel || '未填写'}\n
+                      7. 出行方式（TravelSocialScale）: ${formData.TravelSocialScale || '未填写'}\n
+                      8. 出行频率（TravelBehaviorFrequency）: ${formData.TravelBehaviorFrequency || '未填写'}\n
+                      9. 决策自主程度（SocialDecisionInfluenceDegree）: ${formData.SocialDecisionInfluenceDegree || '未填写'}\n
+                      10. 学习风格（LearningStyleType）: ${formData.LearningStyleType || '未填写'}\n\n
+                      请用调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
+      
+      inputText.value = prompt
+      setTimeout(() => {
+        handleSend()
+      }, 500)
+    } catch (e) {
+      console.error('加载用户画像失败', e)
+    }
+  }
+}
 </script>
 
 <style scoped>

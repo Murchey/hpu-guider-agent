@@ -98,7 +98,7 @@ html.dark .el-tabs__header {
 }
 
 html.dark .el-tabs__nav-wrap::after {
-  background-color: #0f3460;
+  background-color: #1A1A1A;
 }
 
 html.dark .demo-tabs .el-tabs__item {
@@ -111,5 +111,44 @@ html.dark .demo-tabs .el-tabs__item.is-active {
 
 html.dark .el-tabs__active-bar {
   background-color: #409eff;
+}
+
+.info-dialog .el-dialog__header {
+  text-align: center;
+}
+
+.info-dialog .el-dialog__title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+html.dark .info-dialog .el-dialog__header {
+  border-bottom: 1px solid #1A1A1A;
+}
+
+html.dark .info-dialog .el-dialog__title {
+  color: #e4e7ed;
+}
+
+html.dark .info-dialog .el-dialog__body {
+  background: #141414;
+}
+
+html.dark .info-dialog .el-dialog__footer {
+  background: #141414;
+  border-top: 1px solid #141414;
+}
+
+html.dark .info-dialog .el-form {
+  background: #141414;
+}
+
+html.dark .info-dialog .el-form-item {
+  background: #141414;
+}
+
+html.dark .info-dialog .el-form-item__label {
+  background: #141414;
+  color: #e4e7ed;
 }
 </style>
