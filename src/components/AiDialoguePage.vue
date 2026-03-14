@@ -37,7 +37,7 @@
           <div class="message-content">
             <el-card class="message-card loading-card">
               <el-icon class="loading-icon"><Loading /></el-icon>
-              <span>正在思考中...</span>
+              <span>HPU 智慧导游正在思考中...</span>
             </el-card>
           </div>
         </div>
@@ -293,8 +293,8 @@ const checkAndSendUserProfile = () => {
       const formData = JSON.parse(savedForm)
       localStorage.removeItem('user-profile-form')
       
-      const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：
-                      \n\n1. MBTI性格类型（MBTIPersonalityType）: ${formData.MBTIPersonalityType || '未填写'}\n
+      const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：\n\n
+                      1. MBTI性格类型（MBTIPersonalityType）: ${formData.MBTIPersonalityType || '未填写'}\n
                       2. 文化价值观倾向（CulturalValueOrientation）: ${formData.CulturalValueOrientation || '未填写'}\n
                       3. 历史旅行类型（HistorialTravelType）: ${formData.HistorialTravelType || '未填写'}\n
                       4. 决策参考渠道（DecisionReferenceChannel）: ${formData.DecisionReferenceChannel || '未填写'}\n

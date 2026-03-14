@@ -10,8 +10,8 @@
       <el-form :model="apiSettings" label-width="100px">
         <el-form-item label="服务提供商">
           <el-select v-model="apiSettings.provider" @change="handleProviderChange" style="width: 100%">
-            <el-option label="OpenAI (兼容API)" value="openai" />
             <el-option label="硅基流动 (SiliconFlow)" value="siliconflow" />
+            <el-option label="OpenAI (兼容API)" value="openai" />
             <el-option label="智谱AI (Zhipu)" value="zhipu" />
             <el-option label="通义千问 (Qwen)" value="qwen" />
             <el-option label="自定义 API" value="custom" />
