@@ -182,6 +182,7 @@ onMounted(() => {
 
 .settings-card {
   width: 70%;
+  margin: 0 auto;
 }
 
 .card-header {
