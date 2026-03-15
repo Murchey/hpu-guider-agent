@@ -47,36 +47,41 @@ import axios from 'axios'
 const testing = ref(false)
 
 const apiSettings = ref({
-  provider: 'openai',
-  baseURL: '',
+  provider: '硅基流动',
+  baseURL: 'https://api.siliconflow.cn/v1',
   apiKey: '',
-  model: 'gpt-3.5-turbo'
+  model: 'Qwen/Qwen2.5-7B-Instruct'
 })
 
-const providerConfigs: Record<string, { baseURL: string; model: string; name: string }> = {
+const providerConfigs: Record<string, { baseURL: string; model: string; name: string; apiKey: string }> = {
   openai: {
     baseURL: 'https://api.openai.com/v1',
     model: 'gpt-3.5-turbo',
+    apiKey: '',
     name: 'OpenAI'
   },
   siliconflow: {
     baseURL: 'https://api.siliconflow.cn/v1',
     model: 'Qwen/Qwen2.5-7B-Instruct',
+    apiKey: '',
     name: '硅基流动'
   },
   zhipu: {
     baseURL: 'https://open.bigmodel.cn/api/paas/v4',
     model: 'glm-4',
+    apiKey: '',
     name: '智谱AI'
   },
   qwen: {
     baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     model: 'qwen-turbo',
+    apiKey: '',
     name: '通义千问'
   },
   custom: {
     baseURL: '',
     model: '',
+    apiKey: '',
     name: '自定义'
   }
 }
@@ -169,14 +174,14 @@ onMounted(() => {
 .setting-page {
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 15px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
 }
 
 .settings-card {
-  width: 500px;
+  width: 70%;
 }
 
 .card-header {
