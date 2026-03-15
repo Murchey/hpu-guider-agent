@@ -106,6 +106,23 @@
             </el-dialog>
           </template>
       </el-card>
+
+      <br/>
+      <br/>
+
+      <el-card class="feature-card">
+      <template #header>
+      <div class="card-header">
+        <span>常用工具链接</span>
+      </div>
+    </template>
+    <el-button><el-link href="https://ditu.amap.com/" target="_blank">高德地图</el-link></el-button>
+    <el-button><el-link href="https://passport.meituan.com/" target="_blank">美团订购</el-link></el-button>
+    <el-button><el-link href="https://www.didiglobal.com/" target="_blank">嘀嘀打车</el-link></el-button>
+    <el-button><el-link href="https://www.bilibili.com/" target="_blank">哔哩哔哩</el-link></el-button>
+    <el-button><el-link href="https://www.msn.cn/zh-cn/weather/" target="_blank">MSN天气预报</el-link></el-button>
+    <template #footer></template>
+    </el-card>
     </div>
   </div>
 </template>
