@@ -3,7 +3,7 @@
 
 ## 调试方法
 
-电脑上首先要安装npm。打开vscode安装Vue插件，然后再powershell打开本地文件夹项目
+电脑上首先要安装nodejs。打开vscode安装Vue插件，然后再powershell打开本地文件夹项目
 
 `npm run dev`
 
