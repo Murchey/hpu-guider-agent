@@ -110,17 +110,22 @@
       <br/>
       <br/>
 
-      <el-card class="feature-card">
+      <el-card class="feature-card tools-card">
       <template #header>
       <div class="card-header">
         <span>常用工具链接</span>
       </div>
     </template>
+    <div class="button-grid">
     <el-button><el-link href="https://ditu.amap.com/" target="_blank">高德地图</el-link></el-button>
     <el-button><el-link href="https://passport.meituan.com/" target="_blank">美团订购</el-link></el-button>
     <el-button><el-link href="https://www.didiglobal.com/" target="_blank">嘀嘀打车</el-link></el-button>
     <el-button><el-link href="https://www.bilibili.com/" target="_blank">哔哩哔哩</el-link></el-button>
-    <el-button><el-link href="https://www.msn.cn/zh-cn/weather/" target="_blank">MSN天气预报</el-link></el-button>
+    <el-button><el-link href="https://www.msn.cn/zh-cn/weather/" target="_blank">天气预报</el-link></el-button>
+    <el-button><el-link href="https://www.xiaohongshu.com/explore" target="_blank">小红书</el-link></el-button>
+    <el-button><el-link href="https://www.douyin.com" target="_blank">抖音</el-link></el-button>
+    </div>
+    
     <template #footer></template>
     </el-card>
     </div>
@@ -201,6 +206,18 @@ const handleConfirm = () => {
   max-width: 600px;
   margin: 0 auto;
   text-align: left;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+
+.button-grid .el-button {
+  width: 100%;
 }
 
 .feature-card .el-card__body p {
