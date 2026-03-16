@@ -241,16 +241,6 @@ html.dark .feature-card :deep(.el-card__footer) {
   border-top-color: #1A1A1A;
 }
 
-html.dark .welcome-title {
-  /* 欢迎标题颜色 #409eff*/
-  color: #409eff;
-  
-}
-
-html.dark .welcome-subtitle {
-  color: #a3a6ad;
-}
-
 html.dark .feature-card .el-card__header {
   background: #1d2a4d;
   border-color: #0f3460;
