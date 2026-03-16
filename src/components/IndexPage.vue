@@ -263,9 +263,6 @@ html.dark .card-header h2 {
   color: #e4e7ed;
 }
 
-.info-dialog :deep(.el-dialog__header) {
-  text-align: center;
-}
 
 .info-dialog :deep(.el-dialog__title) {
   font-size: 18px;
