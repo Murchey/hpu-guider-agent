@@ -191,12 +191,14 @@ const handleConfirm = () => {
 
 .welcome-title {
   font-size: 48px;
+  /* 欢迎标题颜色 */
   color: #409eff;
   margin-bottom: 20px;
 }
 
 .welcome-subtitle {
   font-size: 24px;
+  /* 欢迎副标题颜色 */
   color: #a3a6ad;
   margin-bottom: 40px;
 }
@@ -235,11 +237,14 @@ const handleConfirm = () => {
 }
 
 html.dark .feature-card :deep(.el-card__footer) {
+  /* 卡片页脚分割线颜色，默认与背景颜色一致 */
   border-top-color: #1A1A1A;
 }
 
 html.dark .welcome-title {
+  /* 欢迎标题颜色 #409eff*/
   color: #409eff;
+  
 }
 
 html.dark .welcome-subtitle {
