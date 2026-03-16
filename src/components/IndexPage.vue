@@ -226,7 +226,6 @@ const handleConfirm = () => {
   font-size: 16px;
   line-height: 1.8;
 }
-
 .card-header h2 {
   font-size: 20px;
   margin: 0;
