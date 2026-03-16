@@ -52,7 +52,6 @@ html.dark, html.dark body {
 #app {
   height: 100vh;
   width: 100vw;
-  background: #d26868;
 }
 
 .app-container {
@@ -105,6 +104,7 @@ html.dark .el-tabs__header {
 } */
 
 html.dark .demo-tabs .el-tabs__item {
+  /* 导航栏不激活字体颜色 */
   color: #a3a6ad;
 }
 

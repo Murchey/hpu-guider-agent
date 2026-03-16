@@ -191,24 +191,30 @@ onMounted(() => {
 }
 
 html.dark .settings-card {
+  /* 设置卡片背景颜色 */
   background: #181D27;
+  /* 设置卡片边框颜色：制作阴影效果用 */
   border-color: #0f3460;
 }
 
-html.dark .settings-card .el-card__header {
+/* html.dark .settings-card .el-card__header {
+  未确定冗余代码
   background: #181D27;
   border-color: #0f3460;
-}
+} */
 
-html.dark .settings-card .el-card__body {
+/* html.dark .settings-card .el-card__body {
+  未确定冗余代码
   background: #181D27;
-}
+} */
 
 html.dark .card-header {
+  /* API设置卡片标题字体颜色 */
   color: #e4e7ed;
 }
 
-html.dark .el-form-item__label {
+/* html.dark .el-form-item__label {
+  未确定冗余代码
   color: #181D27;
-}
+} */
 </style>

@@ -236,24 +236,28 @@ const handleConfirm = () => {
 }
 
 html.dark .feature-card :deep(.el-card__footer) {
-  /* 卡片页脚分割线颜色，默认与背景颜色一致 */
+  /* 首页卡片页脚分割线颜色，默认与背景颜色一致 */
   border-top-color: #1A1A1A;
 }
 
-html.dark .feature-card .el-card__header {
+/* html.dark .feature-card .el-card__header {
+  未确定冗余代码
   background: #1d2a4d;
   border-color: #0f3460;
-}
+} */
 
-html.dark .feature-card .el-card__body {
+/* html.dark .feature-card .el-card__body {
+  未确定冗余代码
   background: #1d2a4d;
-}
+} */
 
 html.dark .feature-card .el-card__body p {
+  /* 用户画像卡片描述字体颜色 */
   color: #e4e7ed;
 }
 
 html.dark .card-header h2 {
+  /* 用户画像卡片头部标题字体颜色 */
   color: #e4e7ed;
 }
 
@@ -263,15 +267,18 @@ html.dark .card-header h2 {
   font-weight: bold;
 }
 
-html.dark .info-dialog :deep(.el-dialog__title) {
+/* html.dark .info-dialog :deep(.el-dialog__title) {
+  未确定冗余代码
   color: #e4e7ed;
-}
+} */
 
-html.dark .info-dialog {
-  background: #1d2a4d;
-}
+/* html.dark .info-dialog {
+  未确定冗余代码
+  background: #fa0d05;
+} */
 
-html.dark .info-dialog :deep(.el-dialog__header) {
+/* html.dark .info-dialog :deep(.el-dialog__header) {
+  不确定冗余代码
   border-bottom: 1px solid #0f3460;
-}
+} */
 </style>

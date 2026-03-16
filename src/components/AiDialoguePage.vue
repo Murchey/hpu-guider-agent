@@ -359,6 +359,7 @@ const checkAndSendUserProfile = () => {
 
 .message-role {
   font-size: 12px;
+  /* AI对话页面，用户与AI的昵称颜色 */
   color: #909399;
   margin-bottom: 5px;
 }
@@ -372,23 +373,28 @@ const checkAndSendUserProfile = () => {
   padding: 12px 16px;
 }
 
-.message-card.user {
-  background: #409eff;
-  border-color: #409eff;
-}
+/* .message-card.user {
+   未确定冗余代码
+    background: #409eff;
+    border-color: #409eff;
+} */
 
 .message-card.assistant {
   background: var(--el-bg-color);
 }
 
 .message-text {
-  color: #303133;
+  /* 
+  未确定冗余代码
+  color: #303133; 
+  */
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .message-card.user .message-text {
+  /* 用户的发言颜色 */
   color: #fff;
 }
 
@@ -433,22 +439,28 @@ html.dark .chat-container {
 }
 
 html.dark .message-card {
+  /* 用户与AI的对话框背景颜色 */
   background: #1d2a4d;
+  /* 用户与AI的对话框边框颜色 */
   border-color: #0f3460;
 }
 
 html.dark .message-text {
+  /* AI的发言文字颜色 */
   color: #e4e7ed;
 }
 
 html.dark .chat-input {
-  background: #1a1a1a;
+  /* 底部输入栏外圈盒子背景颜色 */
+  background: #202020;
+  /* 输入栏上方与聊天栏分割线颜色 */
   border-top-color: #0f3460;
 }
 
-html.dark .chat-input .el-textarea__inner {
+/* html.dark .chat-input .el-textarea__inner {
+未确定代码
   background: #1d2a4d;
   border-color: #0f3460;
   color: #e4e7ed;
-}
+} */
 </style>
