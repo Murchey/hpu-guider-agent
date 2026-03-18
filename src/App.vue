@@ -57,7 +57,7 @@ html.dark, html.dark body {
 .app-container {
   height: 100vh;
   width: 100vw;
-  padding: 20px;
+  padding: 0px;
   box-sizing: border-box;
 
   /* 外侧边框颜色 */
@@ -66,12 +66,11 @@ html.dark, html.dark body {
 
 .demo-tabs {
   height: calc(100vh - 40px);
-  /* background: #ab4f4f; */
 }
 
 .demo-tabs .el-tabs__header {
-  margin: 0;
-  /* background: #cb6161; */
+  margin: 0px;
+  padding: 20px;
 }
 
 .demo-tabs .el-tabs__nav-wrap::after {
