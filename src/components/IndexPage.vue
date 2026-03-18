@@ -133,7 +133,6 @@
 </template>
 
 <script setup lang="ts">
-import { ElOption } from 'element-plus';
 import { reactive, ref } from 'vue'
 
 const emit = defineEmits<{
