@@ -10,7 +10,12 @@ import App from './App.vue'
 const app = createApp(App)
 app.use(ElementPlus)
 
-document.documentElement.classList.add('dark')
-document.body.classList.add('dark')
+const applyTheme = (isDark: boolean) => {
+  document.documentElement.classList.toggle('dark', isDark)
+  document.body.classList.toggle('dark', isDark)
+}
+
+const saved = localStorage.getItem('theme-mode')
+applyTheme(saved !== 'light')
 
 app.mount('#app')

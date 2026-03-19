@@ -36,6 +36,25 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <el-card class="settings-card">
+      <template #header>
+        <div class="card-header">
+          <span>显示模式</span>
+        </div>
+      </template>
+
+      <el-form label-width="100px">
+        <el-form-item label="浅色 / 暗色">
+          <el-switch
+            v-model="isDarkMode"
+            active-text="暗色"
+            inactive-text="浅色"
+            @change="handleThemeChange"
+          />
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
@@ -45,6 +64,8 @@ import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
 const testing = ref(false)
+
+const isDarkMode = ref(true)
 
 const apiSettings = ref({
   provider: '硅基流动',
@@ -165,8 +186,27 @@ const testConnection = async () => {
   }
 }
 
+const applyTheme = (isDark: boolean) => {
+  document.documentElement.classList.toggle('dark', isDark)
+  document.body.classList.toggle('dark', isDark)
+}
+
+const loadTheme = () => {
+  const saved = localStorage.getItem('theme-mode')
+  isDarkMode.value = saved !== 'light'
+  applyTheme(isDarkMode.value)
+}
+
+const handleThemeChange = (val: string | number | boolean) => {
+  const nextIsDark = Boolean(val)
+  isDarkMode.value = nextIsDark
+  localStorage.setItem('theme-mode', nextIsDark ? 'dark' : 'light')
+  applyTheme(nextIsDark)
+}
+
 onMounted(() => {
   loadSettings()
+  loadTheme()
 })
 </script>
 
@@ -176,13 +216,18 @@ onMounted(() => {
   height: 100%;
   padding: 15px;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .settings-card {
   width: 70%;
   margin: 0 auto;
+}
+
+.settings-card + .settings-card {
+  margin-top: 15px;
 }
 
 .card-header {
@@ -197,24 +242,8 @@ html.dark .settings-card {
   border-color: #0f3460;
 }
 
-/* html.dark .settings-card .el-card__header {
-  未确定冗余代码
-  background: #181D27;
-  border-color: #0f3460;
-} */
-
-/* html.dark .settings-card .el-card__body {
-  未确定冗余代码
-  background: #181D27;
-} */
-
 html.dark .card-header {
   /* API设置卡片标题字体颜色 */
   color: #e4e7ed;
 }
-
-/* html.dark .el-form-item__label {
-  未确定冗余代码
-  color: #181D27;
-} */
 </style>

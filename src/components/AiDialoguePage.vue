@@ -44,30 +44,34 @@
       </div>
       
       <div class="chat-input">
-        <el-input
-          v-model="inputText"
-          type="textarea"
-          placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
-          :rows="2"
-          :disabled="isLoading"
-          @keydown.enter.exact.prevent="handleSend"
-          @keydown.shift.enter.prevent="handleNewLine"
-        />
-        <el-button 
-          type="primary" 
-          :loading="isLoading"
-          :disabled="!inputText.trim() || isLoading"
-          @click="handleSend"
-        >
-          发送
-        </el-button>
-        <el-button 
-          type="danger"
-          :disabled="messages.length === 0 || isLoading"
-          @click="clearChat"
-        >
-          清空聊天
-        </el-button>
+        <div class="chat-textarea">
+          <el-input
+            v-model="inputText"
+            type="textarea"
+            placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
+            :rows="2"
+            :disabled="isLoading"
+            @keydown.enter.exact.prevent="handleSend"
+            @keydown.shift.enter.prevent="handleNewLine"
+          />
+        </div>
+        <div class="chat-actions">
+          <el-button 
+            type="primary" 
+            :loading="isLoading"
+            :disabled="!inputText.trim() || isLoading"
+            @click="handleSend"
+          >
+            发送
+          </el-button>
+          <el-button 
+            type="danger"
+            :disabled="messages.length === 0 || isLoading"
+            @click="clearChat"
+          >
+            清空聊天
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -330,12 +334,14 @@ const checkAndSendUserProfile = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  min-height: 0;
 }
 
 .message-item {
@@ -373,28 +379,40 @@ const checkAndSendUserProfile = () => {
   padding: 12px 16px;
 }
 
-/* .message-card.user {
-   未确定冗余代码
+.message-card.user {
+  background: #134134;
+  border-color: #1E2F29;
+}
+
+/* ========= 可自定义：用户聊天框（浅色模式）颜色 =========
+  - 修改用户气泡背景：background
+  - 修改用户气泡边框：border-color
+  - 修改用户文字颜色：配合 .message-card.user .message-text 一起改
+
+  例如（取消注释并改颜色值）：
+  .message-card.user {
     background: #409eff;
     border-color: #409eff;
-} */
+  }
+*/
 
 .message-card.assistant {
+  /* ========= 可自定义：AI聊天框（浅色模式）颜色 =========
+    - 修改AI气泡背景：background
+    - 修改AI气泡边框：border-color
+    - 修改AI文字颜色：配合 .message-text（或单独加 .message-card.assistant .message-text）一起改
+  */
   background: var(--el-bg-color);
 }
 
 .message-text {
-  /* 
-  未确定冗余代码
-  color: #303133; 
-  */
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .message-card.user .message-text {
-  /* 用户的发言颜色 */
+  /* ========= 可自定义：用户聊天框文字颜色 ========= */
   color: #fff;
 }
 
@@ -414,15 +432,65 @@ const checkAndSendUserProfile = () => {
 }
 
 .chat-input {
+  /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
+  position: sticky;
+  bottom: 0;
   display: flex;
-  gap: 10px;
-  padding: 15px 20px;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 16px;
   background: var(--el-bg-color);
   border-top: 1px solid var(--el-border-color-lighter);
 }
 
-.chat-input .el-textarea {
+/* ========= 可自定义：底部聊天栏按钮颜色（仅聊天区范围） =========
+  方式1：通过 Element Plus CSS 变量（推荐，影响范围仅在 chat-input 内）
+  - 发送按钮（primary）：修改 --el-color-primary
+  - 清空按钮（danger）：修改 --el-color-danger
+
+  例如（取消注释并改颜色值）：
+  .chat-input {
+    --el-color-primary: #409eff;
+    --el-color-danger: #f56c6c;
+  }
+*/
+
+/* 方式2：精确覆盖按钮样式（需要时再用，取消注释并改颜色值）
+  .chat-actions :deep(.el-button--primary) {
+    background-color: #409eff;
+    border-color: #409eff;
+    color: #ffffff;
+  }
+
+  .chat-actions :deep(.el-button--danger) {
+    background-color: #f56c6c;
+    border-color: #f56c6c;
+    color: #ffffff;
+  }
+*/
+
+.chat-textarea {
   flex: 1;
+}
+
+.chat-textarea :deep(.el-textarea) {
+  height: 100%;
+}
+
+.chat-textarea :deep(.el-textarea__inner) {
+  height: 100%;
+}
+
+.chat-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-actions .el-button {
+  margin-left: 0;
+  flex: 1;
+  min-width: 96px;
 }
 
 .empty-tip {
@@ -438,10 +506,15 @@ html.dark .chat-container {
   background: transparent;
 }
 
-html.dark .message-card {
-  /* 用户与AI的对话框背景颜色 */
+html.dark .message-card.user {
+  /* ========= 可自定义：用户聊天框（深色模式）颜色 ========= */
+  background: #1E2F29;
+  border-color: #1E2F29;
+}
+
+html.dark .message-card.assistant {
+  /* ========= 可自定义：AI聊天框（深色模式）颜色 ========= */
   background: #1d2a4d;
-  /* 用户与AI的对话框边框颜色 */
   border-color: #0f3460;
 }
 
@@ -450,7 +523,24 @@ html.dark .message-text {
   color: #e4e7ed;
 }
 
+/* ========= 可自定义：用户聊天框（深色模式）颜色 =========
+  例如（取消注释并改颜色值）：
+  html.dark .message-card.user {
+    background: #409eff;
+    border-color: #409eff;
+  }
+*/
+
+/* ========= 可自定义：AI聊天框（深色模式）颜色 =========
+  例如（取消注释并改颜色值）：
+  html.dark .message-card.assistant {
+    background: #1d2a4d;
+    border-color: #0f3460;
+  }
+*/
+
 html.dark .chat-input {
+  /* ========= 可自定义：底部聊天栏（深色模式）背景颜色 ========= */
   /* 底部输入栏外圈盒子背景颜色 */
   background: #202020;
   /* 输入栏上方与聊天栏分割线颜色 */

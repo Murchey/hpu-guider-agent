@@ -239,17 +239,6 @@ html.dark .feature-card :deep(.el-card__footer) {
   border-top-color: #1A1A1A;
 }
 
-/* html.dark .feature-card .el-card__header {
-  未确定冗余代码
-  background: #1d2a4d;
-  border-color: #0f3460;
-} */
-
-/* html.dark .feature-card .el-card__body {
-  未确定冗余代码
-  background: #1d2a4d;
-} */
-
 html.dark .feature-card .el-card__body p {
   /* 用户画像卡片描述字体颜色 */
   color: #e4e7ed;
@@ -265,19 +254,4 @@ html.dark .card-header h2 {
   font-size: 18px;
   font-weight: bold;
 }
-
-/* html.dark .info-dialog :deep(.el-dialog__title) {
-  未确定冗余代码
-  color: #e4e7ed;
-} */
-
-/* html.dark .info-dialog {
-  未确定冗余代码
-  background: #fa0d05;
-} */
-
-/* html.dark .info-dialog :deep(.el-dialog__header) {
-  不确定冗余代码
-  border-bottom: 1px solid #0f3460;
-} */
 </style>
