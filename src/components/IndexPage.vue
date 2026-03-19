@@ -175,10 +175,12 @@ const handleConfirm = () => {
 
 .index-page {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
+  padding: 10px 0;
 }
 
 .welcome-container {
@@ -219,6 +221,10 @@ const handleConfirm = () => {
 
 .button-grid .el-button {
   width: 100%;
+}
+
+.button-grid .el-button + .el-button {
+  margin-left: 0;
 }
 
 .feature-card .el-card__body p {

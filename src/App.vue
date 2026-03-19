@@ -87,6 +87,8 @@ html.dark, html.dark body {
   padding: 20px;
   box-sizing: border-box;
   background: var(--el-bg-color-page);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .demo-tabs .el-tab-pane {
