@@ -187,8 +187,8 @@ const testConnection = async () => {
 }
 
 const applyTheme = (isDark: boolean) => {
-  document.documentElement.classList.toggle('dark', isDark)
-  document.body.classList.toggle('dark', isDark)
+  document.documentElement.classList.toggle('dark', isDark);
+  document.body.classList.toggle('dark', isDark);
 }
 
 const loadTheme = () => {

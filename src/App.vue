@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-tabs
       v-model="activeName"
-      class="demo-tabs"
+      class="index-tabs"
       @tab-click="handleClick">
       
       <el-tab-pane label="首页" name="indexPage">
@@ -69,20 +69,20 @@ html.dark, html.dark body {
   background: var(--el-bg-color-page);
 }
 
-.demo-tabs {
+.index-tabs {
   height: calc(100vh - 40px);
 }
 
-.demo-tabs .el-tabs__header {
+.index-tabs .el-tabs__header {
   margin: 0px;
   padding: 20px;
 }
 
-.demo-tabs .el-tabs__nav-wrap::after {
+.index-tabs .el-tabs__nav-wrap::after {
   display: none;
 }
 
-.demo-tabs .el-tabs__content {
+.index-tabs .el-tabs__content {
   height: calc(100% - 40px);
   padding: 20px;
   box-sizing: border-box;
@@ -91,31 +91,30 @@ html.dark, html.dark body {
   overflow-x: hidden;
 }
 
-.demo-tabs .el-tab-pane {
+.index-tabs .el-tab-pane {
   height: 100%;
 }
 
-/* html.dark .demo-tabs {
-  background: #a74d4d;
-} */
 
-.demo-tabs .el-tabs__header {
-  background: var(--el-bg-color-page);
+.index-tabs .el-tabs__header {
+  /* 导航栏背景颜色 */
+  background: var(--el-tabs-bg-color-page);
+  backdrop-filter: blur(20px);
 }
 
 /* html.dark .el-tabs__nav-wrap::after {
   background-color: #a24848;
 } */
 
-.demo-tabs .el-tabs__item {
+.index-tabs .el-tabs__item {
   color: var(--el-text-color-regular);
 }
 
-.demo-tabs .el-tabs__item.is-active {
+.index-tabs .el-tabs__item.is-active {
   color: var(--el-color-primary);
 }
 
-.demo-tabs .el-tabs__active-bar {
+.index-tabs .el-tabs__active-bar {
   background-color: var(--el-color-primary);
 }
 
