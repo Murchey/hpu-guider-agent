@@ -48,12 +48,28 @@ html, body {
   overflow: hidden;
 }
 
-html.dark {
-  --el-bg-color-page: #1D1E1F;
+html {
+  /* ========= 可自定义：浅色模式（全局背景/导航栏） ========= */
+  --app-page-bg: #ffffff;
+  --app-tabs-header-bg: rgba(255, 255, 255, 0.55);
+  --app-tabs-header-border-color: rgba(0, 0, 0, 0.08);
+  --app-tabs-header-blur: 20px;
+
+  --el-bg-color-page: var(--app-page-bg);
 }
 
-html.dark, html.dark body {
-  background: #1D1E1F;
+html.dark {
+  /* ========= 可自定义：深色模式（全局背景/导航栏） ========= */
+  --app-page-bg: #1d1e1fec;
+  --app-tabs-header-bg: rgba(29, 30, 31, 0.55);
+  --app-tabs-header-border-color: rgba(255, 255, 255, 0.10);
+  --app-tabs-header-blur: 20px;
+
+  --el-bg-color-page: var(--app-page-bg);
+}
+
+html, body {
+  background: var(--app-page-bg);
 }
 
 #app {
@@ -67,15 +83,32 @@ html.dark, html.dark body {
   padding: 0px;
   box-sizing: border-box;
   background: var(--el-bg-color-page);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
 }
 
 .index-tabs {
-  height: calc(100vh - 40px);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .index-tabs .el-tabs__header {
   margin: 0px;
   padding: 20px;
+  /* ========= 可自定义：导航栏背景（支持高斯模糊） ========= */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: var(--app-tabs-header-bg);
+  border-bottom: 1px solid var(--app-tabs-header-border-color);
+  backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
 }
 
 .index-tabs .el-tabs__nav-wrap::after {
@@ -83,28 +116,28 @@ html.dark, html.dark body {
 }
 
 .index-tabs .el-tabs__content {
-  height: calc(100% - 40px);
-  padding: 20px;
-  box-sizing: border-box;
-  background: var(--el-bg-color-page);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  /* 顶部留出导航栏的高度空间，避免内容被遮挡 (根据实际高度调整) */
+  padding: 80px 20px 20px 20px;
+  box-sizing: border-box;
+  background: transparent;
+  
+  /* 隐藏滚动条但保留滚动功能 (Firefox / IE) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* 隐藏滚动条 (Chrome / Safari / Edge) */
+.index-tabs .el-tabs__content::-webkit-scrollbar {
+  display: none;
 }
 
 .index-tabs .el-tab-pane {
   height: 100%;
 }
-
-
-.index-tabs .el-tabs__header {
-  /* 导航栏背景颜色 */
-  background: var(--el-tabs-bg-color-page);
-  backdrop-filter: blur(20px);
-}
-
-/* html.dark .el-tabs__nav-wrap::after {
-  background-color: #a24848;
-} */
 
 .index-tabs .el-tabs__item {
   color: var(--el-text-color-regular);
