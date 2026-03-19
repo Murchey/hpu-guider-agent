@@ -379,31 +379,6 @@ const checkAndSendUserProfile = () => {
   padding: 12px 16px;
 }
 
-.message-card.user {
-  background: #134134;
-  border-color: #1E2F29;
-}
-
-/* ========= 可自定义：用户聊天框（浅色模式）颜色 =========
-  - 修改用户气泡背景：background
-  - 修改用户气泡边框：border-color
-  - 修改用户文字颜色：配合 .message-card.user .message-text 一起改
-
-  例如（取消注释并改颜色值）：
-  .message-card.user {
-    background: #409eff;
-    border-color: #409eff;
-  }
-*/
-
-.message-card.assistant {
-  /* ========= 可自定义：AI聊天框（浅色模式）颜色 =========
-    - 修改AI气泡背景：background
-    - 修改AI气泡边框：border-color
-    - 修改AI文字颜色：配合 .message-text（或单独加 .message-card.assistant .message-text）一起改
-  */
-  background: var(--el-bg-color);
-}
 
 .message-text {
   line-height: 1.6;
@@ -411,10 +386,7 @@ const checkAndSendUserProfile = () => {
   word-break: break-word;
 }
 
-.message-card.user .message-text {
-  /* ========= 可自定义：用户聊天框文字颜色 ========= */
-  color: #fff;
-}
+
 
 .loading-card {
   display: flex;
@@ -431,43 +403,7 @@ const checkAndSendUserProfile = () => {
   to { transform: rotate(360deg); }
 }
 
-.chat-input {
-  /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-lighter);
-}
 
-/* ========= 可自定义：底部聊天栏按钮颜色（仅聊天区范围） =========
-  方式1：通过 Element Plus CSS 变量（推荐，影响范围仅在 chat-input 内）
-  - 发送按钮（primary）：修改 --el-color-primary
-  - 清空按钮（danger）：修改 --el-color-danger
-
-  例如（取消注释并改颜色值）：
-  .chat-input {
-    --el-color-primary: #409eff;
-    --el-color-danger: #f56c6c;
-  }
-*/
-
-/* 方式2：精确覆盖按钮样式（需要时再用，取消注释并改颜色值）
-  .chat-actions :deep(.el-button--primary) {
-    background-color: #409eff;
-    border-color: #409eff;
-    color: #ffffff;
-  }
-
-  .chat-actions :deep(.el-button--danger) {
-    background-color: #f56c6c;
-    border-color: #f56c6c;
-    color: #ffffff;
-  }
-*/
 
 .chat-textarea {
   flex: 1;
@@ -506,6 +442,42 @@ html.dark .chat-container {
   background: transparent;
 }
 
+.message-card.user {
+  background: #41B883;
+  border-color: #537f70;
+}
+
+.message-card.user .message-text {
+  /* ========= 可自定义：用户聊天框文字颜色（浅色模式） ========= */
+  color: #000000;
+}
+
+.message-card.assistant .message-text {
+  /* ========= 可自定义：AI聊天框文字颜色（浅色模式） ========= */
+  color: var(--el-text-color-primary);
+}
+
+/* ========= 可自定义：用户聊天框（浅色模式）颜色 =========
+  - 修改用户气泡背景：background
+  - 修改用户气泡边框：border-color
+  - 修改用户文字颜色：配合 .message-card.user .message-text 一起改
+
+  例如（取消注释并改颜色值）：
+  .message-card.user {
+    background: #409eff;
+    border-color: #409eff;
+  }
+*/
+
+.message-card.assistant {
+  /* ========= 可自定义：AI聊天框（浅色模式）颜色 =========
+    - 修改AI气泡背景：background
+    - 修改AI气泡边框：border-color
+    - 修改AI文字颜色：配合 .message-text（或单独加 .message-card.assistant .message-text）一起改
+  */
+  background: var(--el-bg-color);
+}
+
 html.dark .message-card.user {
   /* ========= 可自定义：用户聊天框（深色模式）颜色 ========= */
   background: #1E2F29;
@@ -518,8 +490,13 @@ html.dark .message-card.assistant {
   border-color: #0f3460;
 }
 
-html.dark .message-text {
-  /* AI的发言文字颜色 */
+html.dark .message-card.user .message-text {
+  /* ========= 可自定义：用户聊天框文字颜色（深色模式） ========= */
+  color: #fff;
+}
+
+html.dark .message-card.assistant .message-text {
+  /* ========= 可自定义：AI聊天框文字颜色（深色模式） ========= */
   color: #e4e7ed;
 }
 
@@ -546,11 +523,41 @@ html.dark .chat-input {
   /* 输入栏上方与聊天栏分割线颜色 */
   border-top-color: #0f3460;
 }
+.chat-input {
+  /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-lighter);
+}
 
-/* html.dark .chat-input .el-textarea__inner {
-未确定代码
-  background: #1d2a4d;
-  border-color: #0f3460;
-  color: #e4e7ed;
-} */
+/* ========= 可自定义：底部聊天栏按钮颜色（仅聊天区范围） =========
+  方式1：通过 Element Plus CSS 变量（推荐，影响范围仅在 chat-input 内）
+  - 发送按钮（primary）：修改 --el-color-primary
+  - 清空按钮（danger）：修改 --el-color-danger
+
+  例如（取消注释并改颜色值）：
+  .chat-input {
+    --el-color-primary: #409eff;
+    --el-color-danger: #f56c6c;
+  }
+*/
+
+/* 方式2：精确覆盖按钮样式（需要时再用，取消注释并改颜色值）
+  .chat-actions :deep(.el-button--primary) {
+    background-color: #409eff;
+    border-color: #409eff;
+    color: #ffffff;
+  }
+
+  .chat-actions :deep(.el-button--danger) {
+    background-color: #f56c6c;
+    border-color: #f56c6c;
+    color: #ffffff;
+  }
+*/
 </style>
