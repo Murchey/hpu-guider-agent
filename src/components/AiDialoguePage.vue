@@ -25,7 +25,7 @@
               {{ msg.role === 'user' ? '你' : 'HPU 智慧导游' }}
             </div>
             <el-card class="message-card" :class="msg.role">
-              <div class="message-text" v-html="formatMessage(msg.content)"></div>
+              <div class="message-text" v-html="msg.role === 'assistant' ? formatAssistantMessage(msg.content) : formatMessage(msg.content)"></div>
             </el-card>
           </div>
         </div>
@@ -44,6 +44,20 @@
       </div>
       
       <div class="chat-input">
+        <div class="chat-toolbar">
+          <el-select v-model="toolbarSelectA" placeholder="选择智能体工作模式" style="width: 200px">
+            <el-option label="工作模式：互动问答" value="a1" />
+            <el-option label="工作模式：景点介绍" value="a2" />
+          </el-select>
+          <el-button 
+            class="chat-toolbar-clear"
+            type="danger"
+            :disabled="messages.length === 0 || isLoading"
+            @click="clearChat"
+          >
+            清空聊天
+          </el-button>
+        </div>
         <div class="chat-textarea">
           <el-input
             v-model="inputText"
@@ -64,13 +78,6 @@
           >
             发送
           </el-button>
-          <el-button 
-            type="danger"
-            :disabled="messages.length === 0 || isLoading"
-            @click="clearChat"
-          >
-            清空聊天
-          </el-button>
         </div>
       </div>
     </div>
@@ -82,6 +89,7 @@ import { ref, nextTick, onMounted, computed } from 'vue'
 import { Loading, User, ChatDotRound } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import MarkdownIt from 'markdown-it'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -92,6 +100,15 @@ const messages = ref<Message[]>([])
 const inputText = ref('')
 const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
+
+const toolbarSelectA = ref('a1')
+const toolbarSelectB = ref('b1')
+
+const toolbarSelectALabel = computed(() => {
+  if (toolbarSelectA.value === 'a1') return '工作模式：互动问答'
+  if (toolbarSelectA.value === 'a2') return '工作模式：景点介绍'
+  return ''
+})
 
 const apiSettings = ref({
   provider: 'openai',
@@ -151,6 +168,19 @@ const loadSettings = () => {
   isSettingsLoaded.value = true
 }
 
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true
+})
+
+md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  const token = tokens[idx]
+  token.attrSet('target', '_blank')
+  token.attrSet('rel', 'noopener noreferrer')
+  return self.renderToken(tokens, idx, options)
+}
+
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesRef.value) {
@@ -165,6 +195,11 @@ const formatMessage = (text: string): string => {
   formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
   formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>')
   return formatted
+}
+
+const formatAssistantMessage = (text: string): string => {
+  if (!text) return ''
+  return md.render(text)
 }
 
 const handleNewLine = () => {
@@ -184,8 +219,7 @@ const clearChat = () => {
   }).catch(() => {})
 }
 
-const handleSend = async () => {
-  const text = inputText.value.trim()
+const sendMessage = async (text: string, showUserMessage: boolean) => {
   if (!text || isLoading.value) return
 
   if (!apiSettings.value.apiKey) {
@@ -193,9 +227,12 @@ const handleSend = async () => {
     return
   }
 
-  messages.value.push({ role: 'user', content: text })
-  inputText.value = ''
-  await scrollToBottom()
+  const messagesForRequest: Message[] = [...messages.value, { role: 'user', content: text }]
+
+  if (showUserMessage) {
+    messages.value.push({ role: 'user', content: text })
+    await scrollToBottom()
+  }
 
   isLoading.value = true
 
@@ -216,7 +253,7 @@ const handleSend = async () => {
       headers['Authorization'] = `Bearer ${apiKey}`
       requestData = {
         model: model,
-        messages: messages.value.map(m => ({
+        messages: messagesForRequest.map(m => ({
           role: m.role,
           content: m.content
         })),
@@ -226,7 +263,7 @@ const handleSend = async () => {
       headers['Authorization'] = `Bearer ${apiKey}`
       requestData = {
         model: model,
-        messages: messages.value.map(m => ({
+        messages: messagesForRequest.map(m => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.content
         })),
@@ -236,7 +273,7 @@ const handleSend = async () => {
       headers['Authorization'] = `Bearer ${apiKey}`
       requestData = {
         model: model,
-        messages: messages.value.map(m => ({
+        messages: messagesForRequest.map(m => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.content
         })),
@@ -285,6 +322,19 @@ const handleSend = async () => {
   }
 }
 
+const handleSend = async () => {
+  const text = inputText.value.trim()
+  if (!text || isLoading.value) return
+  inputText.value = ''
+  const prefix = toolbarSelectALabel.value
+  const prefixedText = prefix && !text.startsWith(`${prefix}\n`) ? `${prefix}\n${text}` : text
+  await sendMessage(prefixedText, true)
+}
+
+const handleSendHidden = async (text: string) => {
+  await sendMessage(text, false)
+}
+
 onMounted(() => {
   loadSettings()
   checkAndSendUserProfile()
@@ -310,9 +360,8 @@ const checkAndSendUserProfile = () => {
                       10. 学习风格（LearningStyleType）: ${formData.LearningStyleType || '未填写'}\n\n
                       请用调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
       
-      inputText.value = prompt
       setTimeout(() => {
-        handleSend()
+        handleSendHidden(prompt)
       }, 500)
     } catch (e) {
       console.error('加载用户画像失败', e)
@@ -406,26 +455,31 @@ const checkAndSendUserProfile = () => {
 
 
 .chat-textarea {
-  flex: 1;
+  grid-column: 1 / 2;
 }
 
-.chat-textarea :deep(.el-textarea) {
-  height: 100%;
+.chat-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
 }
 
-.chat-textarea :deep(.el-textarea__inner) {
-  height: 100%;
+.chat-toolbar-clear {
+  margin-left: auto;
 }
 
 .chat-actions {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-self: stretch;
 }
 
 .chat-actions .el-button {
   margin-left: 0;
-  flex: 1;
+  height: 100%;
   min-width: 96px;
 }
 
@@ -455,6 +509,43 @@ html.dark .chat-container {
 .message-card.assistant .message-text {
   /* ========= 可自定义：AI聊天框文字颜色（浅色模式） ========= */
   color: var(--el-text-color-primary);
+  line-height: 1.45;
+}
+
+.message-card.assistant .message-text :deep(p) {
+  margin: 0 0 6px 0;
+}
+
+.message-card.assistant .message-text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.message-card.assistant .message-text :deep(ul),
+.message-card.assistant .message-text :deep(ol) {
+  margin: 0 0 6px 0;
+  padding-left: 18px;
+}
+
+.message-card.assistant .message-text :deep(li) {
+  margin: 2px 0;
+}
+
+.message-card.assistant .message-text :deep(pre) {
+  margin: 6px 0;
+}
+
+.message-card.assistant .message-text :deep(blockquote) {
+  margin: 6px 0;
+}
+
+.message-card.assistant .message-text :deep(h1),
+.message-card.assistant .message-text :deep(h2),
+.message-card.assistant .message-text :deep(h3),
+.message-card.assistant .message-text :deep(h4),
+.message-card.assistant .message-text :deep(h5),
+.message-card.assistant .message-text :deep(h6) {
+  margin: 8px 0 6px 0;
+  line-height: 1.25;
 }
 
 /* ========= 可自定义：用户聊天框（浅色模式）颜色 =========
@@ -527,8 +618,9 @@ html.dark .chat-input {
   /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
   position: sticky;
   bottom: 0;
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
   gap: 12px;
   padding: 12px 16px;
   background: var(--el-bg-color);
