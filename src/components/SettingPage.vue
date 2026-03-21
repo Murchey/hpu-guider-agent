@@ -65,7 +65,7 @@ import axios from 'axios'
 
 const testing = ref(false)
 
-const isDarkMode = ref(true)
+const isDarkMode = ref(false)
 
 const apiSettings = ref({
   provider: '硅基流动',
@@ -193,7 +193,7 @@ const applyTheme = (isDark: boolean) => {
 
 const loadTheme = () => {
   const saved = localStorage.getItem('theme-mode')
-  isDarkMode.value = saved !== 'light'
+  isDarkMode.value = saved === 'dark'
   applyTheme(isDarkMode.value)
 }
 

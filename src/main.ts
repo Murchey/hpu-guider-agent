@@ -16,6 +16,6 @@ const applyTheme = (isDark: boolean) => {
 }
 
 const saved = localStorage.getItem('theme-mode')
-applyTheme(saved !== 'light')
+applyTheme(saved === 'dark')
 
 app.mount('#app')
