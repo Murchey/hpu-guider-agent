@@ -175,7 +175,10 @@ let secondPanelObserver: IntersectionObserver | null = null
 
 const handleParallaxScroll = () => {
   if (!parallaxScrollEl) return
-  parallaxScroll.value = parallaxScrollEl.scrollTop || 0
+  requestAnimationFrame(() => {
+    if (!parallaxScrollEl) return
+    parallaxScroll.value = parallaxScrollEl.scrollTop || 0
+  })
 }
 
 const parallaxStyle = computed(() => {
@@ -212,7 +215,9 @@ onMounted(() => {
         (entries) => {
           const entry = entries[0]
           const ratio = entry?.intersectionRatio ?? 0
-          parallaxMix.value = Math.min(1, Math.max(0, ratio * 1.2))
+          requestAnimationFrame(() => {
+            parallaxMix.value = Math.min(1, Math.max(0, ratio * 1.2))
+          })
         },
         {
           root: parallaxScrollEl,
@@ -275,7 +280,9 @@ onUnmounted(() => {
   background-position: center bottom;
   background-size: cover;
   transform: translate3d(0, 0, 0);
-  will-change: transform;
+  will-change: transform, opacity;
+  /* 添加平滑过渡，让变化更自然 */
+  transition: opacity 0.3s ease-out;
 }
 
 .parallax-back-1 {
