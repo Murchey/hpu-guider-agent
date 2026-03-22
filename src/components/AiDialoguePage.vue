@@ -22,7 +22,7 @@
           </div>
           <div class="message-content">
             <div class="message-role">
-              {{ msg.role === 'user' ? '你' : 'HPU 智慧导游' }}
+              {{ msg.role === 'user' ? '你' : '文途智行' }}
             </div>
             <el-card class="message-card" :class="msg.role">
               <div class="message-text" v-html="msg.role === 'assistant' ? formatAssistantMessage(msg.content) : formatMessage(msg.content)"></div>
@@ -37,7 +37,7 @@
           <div class="message-content">
             <el-card class="message-card loading-card">
               <el-icon class="loading-icon"><Loading /></el-icon>
-              <span>HPU 智慧导游正在思考中...</span>
+              <span>文途智行正在思考中...</span>
             </el-card>
           </div>
         </div>
