@@ -152,7 +152,7 @@ const currentProvider = computed(() => {
 })
 
 const welcomeMessage = computed(() => {
-  return `与 ${currentProvider.value} AI 开始对话`
+  return `与 文途智行 开始对话`
 })
 
 const loadSettings = () => {
