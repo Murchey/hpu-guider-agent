@@ -125,27 +125,19 @@
             </template>
         </el-card>
       </div>
+      <br>
+      <h2 class="pageGuideArrow">更多 ↓ 内容</h2>
     </section>
 
     <section ref="secondPanelRef" class="panel panel-2">
-      <el-card class="feature-card tools-card">
-        <template #header>
-        <div class="card-header">
-          <span>常用工具链接</span>
-        </div>
-      </template>
-      <div class="button-grid">
-      <el-link href="https://ditu.amap.com/" target="_blank"><el-button>高德地图</el-button></el-link>
-      <el-link href="https://passport.meituan.com/" target="_blank"><el-button>美团订购</el-button></el-link>
-      <el-link href="https://www.didiglobal.com/" target="_blank"><el-button>嘀嘀打车</el-button></el-link>
-      <el-link href="https://www.bilibili.com/" target="_blank"><el-button>哔哩哔哩</el-button></el-link>
-      <el-link href="https://www.msn.cn/zh-cn/weather/" target="_blank"><el-button>天气预报</el-button></el-link>
-      <el-link href="https://www.xiaohongshu.com/explore" target="_blank"><el-button>小红书</el-button></el-link>
-      <el-link href="https://www.douyin.com" target="_blank"><el-button>抖音</el-button></el-link>
-      </div>
-      
-      <template #footer></template>
-      </el-card>
+      <h1 text="2xl" justify="center">精选景点</h1>
+      <el-carousel :interval="4000" type="card" height="420px" class="custom-carousel">
+        <el-carousel-item v-for="(img, index) in recommendPlaces" :key="index">
+          <div class="carousel-item-content">
+            <img :src="img" :alt="'place' + (index + 1)" class="carousel-image" />
+          </div>
+        </el-carousel-item>
+      </el-carousel>
     </section>
   </div>
 </template>
@@ -156,6 +148,9 @@ import frontImg from '../assets/FRONT_IMG.png'
 import backImg from '../assets/BACK_IMG.png'
 import frontImg2 from '../assets/2FRONT.png'
 import backImg2 from '../assets/2BACK.png'
+import place1 from '../assets/place1.png'
+import place2 from '../assets/place2.png'
+import place3 from '../assets/place3.png'
 
 const emit = defineEmits<{
   (e: 'navigate', tabName: string): void
@@ -182,6 +177,8 @@ const parallaxMix = ref(0)
 let parallaxScrollEl: HTMLElement | null = null
 const secondPanelRef = ref<HTMLElement | null>(null)
 let secondPanelObserver: IntersectionObserver | null = null
+
+const recommendPlaces = [place1, place2, place3]
 
 const handleParallaxScroll = () => {
   if (!parallaxScrollEl) return
@@ -252,6 +249,42 @@ onUnmounted(() => {
   text-align: center;
 }
 
+/* 走马灯卡片 */
+.el-carousel__item h3 {
+  color: #475669;
+  opacity: 0.75;
+  line-height: 200px;
+  margin: 0;
+  text-align: center;
+}
+
+.el-carousel__item:nth-child(2n) {
+  background-color: #99a9bf;
+}
+
+.el-carousel__item:nth-child(2n + 1) {
+  background-color: #d3dce6;
+}
+
+.custom-carousel {
+  width: 100%;
+  max-width: 600px;
+}
+
+.carousel-item-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .index-page {
   width: 100%;
@@ -281,6 +314,14 @@ onUnmounted(() => {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+}
+
+/* 页面下方小箭头指引 */
+html.dark .pageGuideArrow{
+  color: white;
+}
+.pageGuideArrow{
+  color: rgb(4, 99, 140);
 }
 
 .parallax-layer {
