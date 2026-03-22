@@ -117,7 +117,7 @@
                 </el-form>
                 <template #footer>
                   <div class="drawer-footer">
-                    <el-button @click="dialogFormVisible = false" size="large">取消</el-button>
+                    <el-button @click="cancelBtn" size="large">取消</el-button>
                     <el-button type="primary" @click="handleConfirm" size="large">确定</el-button>
                   </div>
                 </template>
@@ -144,6 +144,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { ElNotification } from 'element-plus'
 import frontImg from '../assets/FRONT_IMG.png'
 import backImg from '../assets/BACK_IMG.png'
 import frontImg2 from '../assets/2FRONT.png'
@@ -208,6 +209,24 @@ const handleConfirm = () => {
   // 关闭对话框并跳转到 AI 对话页面
   dialogFormVisible.value = false
   emit('navigate', 'aiDialogue')
+  afterConfirmMsgBox();
+}
+
+const cancelBtn = () => {
+  dialogFormVisible.value = false;
+    ElNotification({
+    title: '您的表单已保存',
+    message: '如果有需要，你可以修改后再次提交。',
+    type: 'warning',
+  })
+}
+
+const afterConfirmMsgBox = () => {
+  ElNotification({
+    title: '您已点击确认按钮',
+    message: '表单已经尝试提交给智能体，请稍后；如果AI无回复重启应用。',
+    type: 'success',
+  })
 }
 
 onMounted(() => {
@@ -285,6 +304,9 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
 }
+
+
+
 
 .index-page {
   width: 100%;
