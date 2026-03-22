@@ -40,15 +40,28 @@ const handleNavigate = (tabName: string) => {
 </script>
 
 <style>
+@font-face {
+  font-family: 'HanYiQiHei';
+  src: url('./assets/HanYiQiHei-65Jian-Regular-2.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  font-family: var(--app-font-family);
 }
 
 html {
+  /* ========= 可自定义：全局字体（含 Element Plus） ========= */
+  --app-font-family: 'HanYiQiHei', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --el-font-family: var(--app-font-family);
+
   /* ========= 可自定义：浅色模式（全局背景/导航栏） ========= */
   --app-page-bg: #ffffff;
   --app-tabs-header-bg: rgba(255, 255, 255, 0.55);
