@@ -24,93 +24,94 @@
               <el-drawer 
                 v-model="dialogFormVisible" 
                 title="请完成下面的问卷调查" 
-                size="1100px"
+                size="900px"
                 class="info-drawer"
                 direction="rtl"
               >
                 <el-form :model="form" class="profile-form">
-                  <el-form-item label="你的MBTI性格大类" :label-width="formLabelWidth">
+                  <el-form-item label="你的MBTI性格代码" :label-width="formLabelWidth">
                     <el-input v-model="form.MBTIPersonalityType" style="width: 100%" placeholder="输入MBTI代码" />
                   </el-form-item>
                   <el-form-item label="文化价值观倾向" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.CulturalValueOrientation" label="传统文化" border>传统文化</el-radio>
-                      <el-radio v-model="form.CulturalValueOrientation" label="潮流创新" border>潮流创新</el-radio>
-                      <el-radio v-model="form.CulturalValueOrientation" label="人文情怀" border>人文情怀</el-radio>
-                      <el-radio v-model="form.CulturalValueOrientation" label="探险挑战" border>探险挑战</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.CulturalValueOrientation" size="large" fill="#409eff">
+                      <el-radio-button label="传统文化" value="传统文化" />
+                      <el-radio-button label="潮流创新" value="潮流创新" />
+                      <el-radio-button label="人文情怀" value="人文情怀" />
+                      <el-radio-button label="探险挑战" value="探险挑战" />
+                    </el-radio-group>
                   </el-form-item>
+                  <br>
                   <el-form-item label="参与的旅游活动类型" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.HistorialTravelType" label="城市观光" border>城市观光</el-radio>
-                      <el-radio v-model="form.HistorialTravelType" label="户外徒步" border>户外徒步</el-radio>
-                      <el-radio v-model="form.HistorialTravelType" label="海滨度假" border>海滨度假</el-radio>
-                      <el-radio v-model="form.HistorialTravelType" label="古镇体验" border>古镇体验</el-radio>
-                      <el-radio v-model="form.HistorialTravelType" label="主题乐园" border>主题乐园</el-radio>
-                      <el-radio v-model="form.HistorialTravelType" label="文化遗址打卡" border>文化遗址打卡</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.HistorialTravelType" size="large" fill="#409eff">
+                      <el-radio-button label="城市观光" value="城市观光" />
+                      <el-radio-button label="户外徒步" value="户外徒步" />
+                      <el-radio-button label="海滨度假" value="海滨度假" />
+                      <el-radio-button label="古镇体验" value="古镇体验" />
+                      <el-radio-button label="主题乐园" value="主题乐园" />
+                      <el-radio-button label="文化遗址打卡" value="文化遗址打卡" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="计划旅游渠道" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.DecisionReferenceChannel" label="社交媒体" border>社交媒体</el-radio>
-                      <el-radio v-model="form.DecisionReferenceChannel" label="旅游攻略网站" border>旅游攻略网站</el-radio>
-                      <el-radio v-model="form.DecisionReferenceChannel" label="亲友推荐" border>亲友推荐</el-radio>
-                      <el-radio v-model="form.DecisionReferenceChannel" label="官方文旅平台" border>官方文旅平台</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.DecisionReferenceChannel" size="large" fill="#409eff">
+                      <el-radio-button label="社交媒体" value="社交媒体" />
+                      <el-radio-button label="旅游攻略网站" value="旅游攻略网站" />
+                      <el-radio-button label="亲友推荐" value="亲友推荐" />
+                      <el-radio-button label="官方文旅平台" value="官方文旅平台" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="尝试新体验偏好" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.CulturalPreferenceType" label="历史文化" border>历史文化</el-radio>
-                      <el-radio v-model="form.CulturalPreferenceType" label="民俗文化" border>民俗文化</el-radio>
-                      <el-radio v-model="form.CulturalPreferenceType" label="宗教文化" border>宗教文化</el-radio>
-                      <el-radio v-model="form.CulturalPreferenceType" label="现代流行文化" border>现代流行文化</el-radio>
-                      <el-radio v-model="form.CulturalPreferenceType" label="艺术文化" border>艺术文化</el-radio>
-                      <el-radio v-model="form.CulturalPreferenceType" label="自然生态文化" border>自然生态文化</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.CulturalPreferenceType" size="large" fill="#409eff">
+                      <el-radio-button label="历史文化" value="历史文化" />
+                      <el-radio-button label="民俗文化" value="民俗文化" />
+                      <el-radio-button label="宗教文化" value="宗教文化" />
+                      <el-radio-button label="现代流行文化" value="现代流行文化" />
+                      <el-radio-button label="艺术文化" value="艺术文化" />
+                      <el-radio-button label="自然生态文化" value="自然生态文化" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="风险偏好程度" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.RiskPreferenceLevel" label="风险规避（无刺激体验）" border>风险规避（无刺激体验）</el-radio>
-                      <el-radio v-model="form.RiskPreferenceLevel" label="风险中性（适当刺激体验）" border>风险中性（适当刺激体验）</el-radio>
-                      <el-radio v-model="form.RiskPreferenceLevel" label="风险偏好（较多刺激体验）" border>风险偏好（较多刺激体验）</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.RiskPreferenceLevel" size="large" fill="#409eff">
+                      <el-radio-button label="风险规避（无刺激体验）" value="风险规避（无刺激体验）" />
+                      <el-radio-button label="风险中性（适当刺激体验）" value="风险中性（适当刺激体验）" />
+                      <el-radio-button label="风险偏好（较多刺激体验）" value="风险偏好（较多刺激体验）" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="出行倾向的社交规模" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.TravelSocialScale" label="独自出行" border>独自出行</el-radio>
-                      <el-radio v-model="form.TravelSocialScale" label="情侣" border>情侣</el-radio>
-                      <el-radio v-model="form.TravelSocialScale" label="家庭亲子" border>家庭亲子</el-radio>
-                      <el-radio v-model="form.TravelSocialScale" label="团队" border>团队</el-radio>
-                      <el-radio v-model="form.TravelSocialScale" label="朋友结伴" border>朋友结伴</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.TravelSocialScale" size="large" fill="#409eff">
+                      <el-radio-button label="独自出行" value="独自出行" />
+                      <el-radio-button label="情侣" value="情侣" />
+                      <el-radio-button label="家庭亲子" value="家庭亲子" />
+                      <el-radio-button label="团队" value="团队" />
+                      <el-radio-button label="朋友结伴" value="朋友结伴" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="进行出行活动的频率" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.TravelBehaviorFrequency" label="高频(每月1次+)" border>高频(每月1次+)</el-radio>
-                      <el-radio v-model="form.TravelBehaviorFrequency" label="中频(每季度1次)" border>中频(每季度1次)</el-radio>
-                      <el-radio v-model="form.TravelBehaviorFrequency" label="低频(每年1次及以下)" border>低频(每年1次及以下)</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.TravelBehaviorFrequency" size="large" fill="#409eff">
+                      <el-radio-button label="高频(每月1次+)" value="高频(每月1次+)" />
+                      <el-radio-button label="中频(每季度1次)" value="中频(每季度1次)" />
+                      <el-radio-button label="低频(每年1次及以下)" value="低频(每年1次及以下)" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="决策受影响度" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.SocialDecisionInfluenceDegree" label="完全自主决策" border>完全自主决策</el-radio>
-                      <el-radio v-model="form.SocialDecisionInfluenceDegree" label="参考社交意见" border>参考社交意见</el-radio>
-                      <el-radio v-model="form.SocialDecisionInfluenceDegree" label="受社交推荐主导" border>受社交推荐主导</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.SocialDecisionInfluenceDegree" size="large" fill="#409eff">
+                      <el-radio-button label="完全自主决策" value="完全自主决策" />
+                      <el-radio-button label="参考社交意见" value="参考社交意见" />
+                      <el-radio-button label="受社交推荐主导" value="受社交推荐主导" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="学习风格类型" :label-width="formLabelWidth">
-                    <div class="radio-wrap">
-                      <el-radio v-model="form.LearningStyleType" label="视觉型(偏好景观/展览)" border>视觉型(偏好景观/展览)</el-radio>
-                      <el-radio v-model="form.LearningStyleType" label="听觉型(偏好讲解/演出)" border>听觉型(偏好讲解/演出)</el-radio>
-                      <el-radio v-model="form.LearningStyleType" label="体验型(偏好互动参与)" border>体验型(偏好互动参与)</el-radio>
-                    </div>
+                    <el-radio-group v-model="form.LearningStyleType" size="large" fill="#409eff">
+                      <el-radio-button label="视觉型(偏好景观/展览)" value="视觉型(偏好景观/展览)" />
+                      <el-radio-button label="听觉型(偏好讲解/演出)" value="听觉型(偏好讲解/演出)" />
+                      <el-radio-button label="体验型(偏好互动参与)" value="体验型(偏好互动参与)" />
+                    </el-radio-group>
                   </el-form-item>
                   <br>
                 </el-form>
@@ -447,26 +448,39 @@ html.dark .card-header h2 {
   padding-top: 20px;
 }
 
+.drawer-footer :deep(.el-button) {
+  font-size: 18px;
+}
+
 .profile-form :deep(.el-form-item) {
   margin-bottom: 24px;
+  font-size: 16px !important;
+  width: 100%;
+}
+
+.profile-form :deep(.el-form-item__label) {
+  font-size: 16px !important;
+  justify-content: right;
+  text-align: left;
+  min-width: 160px !important;
+}
+
+.profile-form :deep(.el-radio-button__inner) {
+  font-size: 16px !important;
 }
 
 .profile-form :deep(.el-form-item__content) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-start;
 }
 
 .profile-form :deep(.radio-wrap) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.profile-form :deep(.el-form-item__content) {
-  display: flex;
-  overflow-x: auto; /* 如果万一超出了，允许横向滚动而不是换行，保证单行显示 */
-  scrollbar-width: none; /* 隐藏滚动条 */
+  justify-content: flex-start;
 }
 
 .profile-form :deep(.el-form-item__content::-webkit-scrollbar) {
