@@ -1,5 +1,10 @@
 <template>
-  <div class="index-page">
+  <div class="index-page" :style="parallaxStyle">
+    <div class="parallax-container" aria-hidden="true">
+      <div class="parallax-layer parallax-back"></div>
+      <div class="parallax-layer parallax-front"></div>
+      <div class="parallax-overlay"></div>
+    </div>
     <div class="welcome-container">
       <h1 class="welcome-title">WELCOME</h1>
       <p class="welcome-subtitle">HPU智能导游</p>
@@ -133,7 +138,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import frontImg from '../assets/FRONT_IMG.png'
+import backImg from '../assets/BACK_IMG.png'
 
 const emit = defineEmits<{
   (e: 'navigate', tabName: string): void
@@ -155,6 +162,22 @@ const form = reactive({
 })
 const formLabelWidth = '140px'
  
+const parallaxScroll = ref(0)
+let parallaxScrollEl: HTMLElement | null = null
+
+const handleParallaxScroll = () => {
+  if (!parallaxScrollEl) return
+  parallaxScroll.value = parallaxScrollEl.scrollTop || 0
+}
+
+const parallaxStyle = computed(() => {
+  return {
+    '--parallax-scroll': `${parallaxScroll.value}px`,
+    '--parallax-back': `url(${backImg})`,
+    '--parallax-front': `url(${frontImg})`
+  }
+})
+
 const handleConfirm = () => {
   console.log('表单数据:', form)
   
@@ -165,6 +188,19 @@ const handleConfirm = () => {
   dialogFormVisible.value = false
   emit('navigate', 'aiDialogue')
 }
+
+onMounted(() => {
+  nextTick(() => {
+    parallaxScrollEl = document.querySelector('.index-tabs .el-tabs__content') as HTMLElement | null
+    parallaxScrollEl?.addEventListener('scroll', handleParallaxScroll, { passive: true })
+    handleParallaxScroll()
+  })
+})
+
+onUnmounted(() => {
+  parallaxScrollEl?.removeEventListener('scroll', handleParallaxScroll)
+  parallaxScrollEl = null
+})
 </script>
 
 <style scoped>
@@ -181,6 +217,55 @@ const handleConfirm = () => {
   justify-content: flex-start;
   align-items: center;
   padding: 10px 0;
+  position: relative;
+}
+
+.parallax-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.parallax-layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.parallax-back {
+  background-image: var(--parallax-back);
+  transform: translate3d(0, calc(var(--parallax-scroll) * -0.06), 0);
+}
+
+.parallax-front {
+  background-image: var(--parallax-front);
+  background-size: contain;
+  transform: translate3d(0, calc(var(--parallax-scroll) * -0.14), 0);
+}
+
+.parallax-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.55) 35%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+}
+
+html.dark .parallax-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(29, 30, 31, 0.88) 0%,
+    rgba(29, 30, 31, 0.65) 35%,
+    rgba(29, 30, 31, 0.45) 100%
+  );
 }
 
 .welcome-container {
@@ -188,6 +273,8 @@ const handleConfirm = () => {
   justify-content: center;
   width: 100%;
   max-width: 800px;
+  position: relative;
+  z-index: 1;
 }
 
 .welcome-title {
@@ -200,7 +287,7 @@ const handleConfirm = () => {
 .welcome-subtitle {
   font-size: 24px;
   /* 欢迎副标题颜色 */
-  color: #a3a6ad;
+  color: #23A6EB;
   margin-bottom: 40px;
 }
 

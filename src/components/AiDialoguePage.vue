@@ -102,7 +102,7 @@ const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
 
 const toolbarSelectA = ref('a1')
-const toolbarSelectB = ref('b1')
+// const toolbarSelectB = ref('b1')
 
 const toolbarSelectALabel = computed(() => {
   if (toolbarSelectA.value === 'a1') return '工作模式（task_type）：互动问答'
