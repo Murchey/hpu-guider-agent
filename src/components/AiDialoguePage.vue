@@ -105,8 +105,8 @@ const toolbarSelectA = ref('a1')
 const toolbarSelectB = ref('b1')
 
 const toolbarSelectALabel = computed(() => {
-  if (toolbarSelectA.value === 'a1') return '工作模式：互动问答'
-  if (toolbarSelectA.value === 'a2') return '工作模式：景点介绍'
+  if (toolbarSelectA.value === 'a1') return '工作模式（task_type）：互动问答'
+  if (toolbarSelectA.value === 'a2') return '工作模式（task_type）：景点介绍'
   return ''
 })
 
@@ -497,8 +497,9 @@ html.dark .chat-container {
 }
 
 .message-card.user {
-  background: #41B883;
-  border-color: #537f70;
+  /* ========= 可自定义：用户聊天框背景颜色（浅色模式） ========= */
+  background: #9DF29F;
+  border-color: #EFEFEF;
 }
 
 .message-card.user .message-text {
@@ -508,7 +509,7 @@ html.dark .chat-container {
 
 .message-card.assistant .message-text {
   /* ========= 可自定义：AI聊天框文字颜色（浅色模式） ========= */
-  color: var(--el-text-color-primary);
+  color: #000000;
   line-height: 1.45;
 }
 
@@ -566,29 +567,29 @@ html.dark .chat-container {
     - 修改AI气泡边框：border-color
     - 修改AI文字颜色：配合 .message-text（或单独加 .message-card.assistant .message-text）一起改
   */
-  background: var(--el-bg-color);
+  background: #EEEEF0;
 }
 
 html.dark .message-card.user {
   /* ========= 可自定义：用户聊天框（深色模式）颜色 ========= */
-  background: #1E2F29;
-  border-color: #1E2F29;
+  background: #35D28D;
+  border-color: #29292A;
 }
 
 html.dark .message-card.assistant {
   /* ========= 可自定义：AI聊天框（深色模式）颜色 ========= */
-  background: #1d2a4d;
-  border-color: #0f3460;
+  background: #2F2F30;
+  border-color: #29292A;
 }
 
 html.dark .message-card.user .message-text {
   /* ========= 可自定义：用户聊天框文字颜色（深色模式） ========= */
-  color: #fff;
+  color: #000000;
 }
 
 html.dark .message-card.assistant .message-text {
   /* ========= 可自定义：AI聊天框文字颜色（深色模式） ========= */
-  color: #e4e7ed;
+  color: #D4D4D7;
 }
 
 /* ========= 可自定义：用户聊天框（深色模式）颜色 =========
@@ -610,9 +611,9 @@ html.dark .message-card.assistant .message-text {
 html.dark .chat-input {
   /* ========= 可自定义：底部聊天栏（深色模式）背景颜色 ========= */
   /* 底部输入栏外圈盒子背景颜色 */
-  background: #202020;
+  background: #1D1E1F;
   /* 输入栏上方与聊天栏分割线颜色 */
-  border-top-color: #0f3460;
+  border-top-color: #29292A;
 }
 .chat-input {
   /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
