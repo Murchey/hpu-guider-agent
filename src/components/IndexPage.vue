@@ -114,14 +114,33 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <!-- <el-form-item label="人均旅游预算" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.LearningStyleType" size="large" fill="#409eff">
-                      <el-radio-button label="视觉型(偏好景观/展览)" value="视觉型(偏好景观/展览)" />
-                      <el-radio-button label="听觉型(偏好讲解/演出)" value="听觉型(偏好讲解/演出)" />
-                      <el-radio-button label="体验型(偏好互动参与)" value="体验型(偏好互动参与)" />
+                  <el-form-item label="旅游同行人数" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.TravelGroupSize" size="large" fill="#409eff">
+                      <el-radio-button label="3人及以下" value="3人及以下" />
+                      <el-radio-button label="3~7人" value="3~7人" />
+                      <el-radio-button label="7~10人" value="7~10人" />
+                      <el-radio-button label="10人以上" value="10人以上" />
                     </el-radio-group>
                   </el-form-item>
-                  <br> -->
+                  <br>
+                  <el-form-item label="出行总体预算" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.TotalBudget" size="large" fill="#409eff">
+                      <el-radio-button label="2000元及以下" value="2000元及以下" />
+                      <el-radio-button label="5000元及以下" value="5000元及以下" />
+                      <el-radio-button label="1万元及以下" value="1万元及以下" />
+                      <el-radio-button label="大于1万元" value="大于1万元" />
+                    </el-radio-group>
+                  </el-form-item>
+                  <br>
+                  <el-form-item label="旅游出行时长" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.TravelDuration" size="large" fill="#409eff">
+                      <el-radio-button label="3天内" value="3天内" />
+                      <el-radio-button label="3-7天" value="3-7天" />
+                      <el-radio-button label="8-14天" value="8-14天" />
+                      <el-radio-button label="15天及以上" value="15天及以上" />
+                    </el-radio-group>
+                  </el-form-item>
+                  <br>
                 </el-form>
                 <template #footer>
                   <div class="drawer-footer">
@@ -166,7 +185,6 @@ const emit = defineEmits<{
 }>()
 
 const dialogFormVisible = ref(false)
-const formRef = ref();
 const form = reactive({
     MBTIPersonalityType: '',
     CulturalValueOrientation: '',
@@ -177,24 +195,15 @@ const form = reactive({
     TravelSocialScale: '',
     TravelBehaviorFrequency:'',
     SocialDecisionInfluenceDegree: '',
-    LearningStyleType: ''
+    LearningStyleType: '',
+    TravelGroupSize:'',
+    TotalBudget:'',
+    TravelDuration:''
 
 })
 const formLabelWidth = '140px'
 
-const formRules = {
-  MBTIPersonalityType: [{ required: true, message: '请选择您的MBTI人格类型', trigger: 'blur' }],
-  CulturalValueOrientation: [{ required: true, message: '请选择您的文化价值观', trigger: 'change' }],
-  HistorialTravelType: [{ required: true, message: '请选择您的历史旅游类型', trigger: 'change' }],
-  DecisionReferenceChannel: [{ required: true, message: '请选择您的决策参考渠道', trigger: 'change' }],
-  CulturalPreferenceType: [{ required: true, message: '请选择您的文化偏好类型', trigger: 'change' }],
-  RiskPreferenceLevel: [{ required: true, message: '请选择您的风险偏好等级', trigger: 'change' }],
-  TravelSocialScale: [{ required: true, message: '请选择您的旅游社会规模', trigger: 'change' }],
-  TravelBehaviorFrequency: [{ required: true, message: '请选择您的旅游行为频率', trigger: 'change' }],
-  SocialDecisionInfluenceDegree: [{ required: true, message: '请选择您的社会决策影响度', trigger: 'change' }],
-  LearningStyleType: [{ required: true, message: '请选择您的学习风格类型', trigger: 'change' }]
-}
-
+//表单验证函数：确保每个选项问题都有值
 const isFormValid = computed(() => {
   return Object.values(form).every(item => item !== '');
 })
@@ -226,18 +235,15 @@ const parallaxStyle = computed(() => {
   }
 })
 
-const handleConfirm = async () => {
-  if (!formRef.value) return
+const handleConfirm = () =>{
+  console.log('表单数据:', form)
+  // 保存表单数据到 localStorage
+  localStorage.setItem('user-profile-form', JSON.stringify(form))
   
-  try {
-    await formRef.value.validate()
-    console.log('表单数据:', form)
-    localStorage.setItem('user-profile-form', JSON.stringify(form))
-    dialogFormVisible.value = false
-    emit('navigate', 'aiDialogue')
-  } catch (error) {
-    console.log('表单验证失败')
-  }
+  // 关闭对话框并跳转到 AI 对话页面
+  dialogFormVisible.value = false
+  emit('navigate', 'aiDialogue')
+  afterConfirmMsgBox();
 }
 
 const cancelBtn = () => {
