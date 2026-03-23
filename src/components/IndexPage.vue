@@ -32,7 +32,7 @@
                   <el-form-item label="你的MBTI性格代码" :label-width="formLabelWidth">
                     <el-input v-model="form.MBTIPersonalityType" style="width: 100%" placeholder="输入MBTI代码" />
                   </el-form-item>
-                  <el-form-item label="文化价值观倾向" :label-width="formLabelWidth">
+                  <el-form-item label="文化价值倾向" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.CulturalValueOrientation" size="large" fill="#409eff">
                       <el-radio-button label="传统文化" value="传统文化" />
                       <el-radio-button label="潮流创新" value="潮流创新" />
@@ -41,7 +41,7 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="参与的旅游活动类型" :label-width="formLabelWidth">
+                  <el-form-item label="经历旅游类型" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.HistorialTravelType" size="large" fill="#409eff">
                       <el-radio-button label="城市观光" value="城市观光" />
                       <el-radio-button label="户外徒步" value="户外徒步" />
@@ -61,7 +61,7 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="尝试新体验偏好" :label-width="formLabelWidth">
+                  <el-form-item label="对新体验偏好" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.CulturalPreferenceType" size="large" fill="#409eff">
                       <el-radio-button label="历史文化" value="历史文化" />
                       <el-radio-button label="民俗文化" value="民俗文化" />
@@ -80,7 +80,7 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="出行倾向的社交规模" :label-width="formLabelWidth">
+                  <el-form-item label="出行社交规模" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.TravelSocialScale" size="large" fill="#409eff">
                       <el-radio-button label="独自出行" value="独自出行" />
                       <el-radio-button label="情侣" value="情侣" />
@@ -90,7 +90,7 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="进行出行活动的频率" :label-width="formLabelWidth">
+                  <el-form-item label="出行活动频率" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.TravelBehaviorFrequency" size="large" fill="#409eff">
                       <el-radio-button label="高频(每月1次+)" value="高频(每月1次+)" />
                       <el-radio-button label="中频(每季度1次)" value="中频(每季度1次)" />
@@ -115,12 +115,7 @@
                   </el-form-item>
                   <br>
                   <el-form-item label="旅游同行人数" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.TravelGroupSize" size="large" fill="#409eff">
-                      <el-radio-button label="3人及以下" value="3人及以下" />
-                      <el-radio-button label="3~7人" value="3~7人" />
-                      <el-radio-button label="7~10人" value="7~10人" />
-                      <el-radio-button label="10人以上" value="10人以上" />
-                    </el-radio-group>
+                    <el-input v-model="form.TravelGroupSize" style="width: 100%" placeholder="输入出行人数"/>
                   </el-form-item>
                   <br>
                   <el-form-item label="出行总体预算" :label-width="formLabelWidth">
@@ -182,6 +177,10 @@ import place3 from '../assets/place3.webp'
 import place4 from '../assets/place4.webp'
 import place5 from '../assets/place5.webp'
 import place6 from '../assets/place6.webp'
+import place7 from '../assets/place7.webp'
+import place8 from '../assets/place8.webp'
+
+const recommendPlaces = [place1, place2, place3, place4, place5, place6, place7, place8]
 
 const emit = defineEmits<{
   (e: 'navigate', tabName: string): void
@@ -217,7 +216,6 @@ let parallaxScrollEl: HTMLElement | null = null
 const secondPanelRef = ref<HTMLElement | null>(null)
 let secondPanelObserver: IntersectionObserver | null = null
 
-const recommendPlaces = [place1, place2, place3, place4, place5, place6]
 
 const handleParallaxScroll = () => {
   if (!parallaxScrollEl) return
