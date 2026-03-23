@@ -114,11 +114,19 @@
                     </el-radio-group>
                   </el-form-item>
                   <br>
+                  <!-- <el-form-item label="人均旅游预算" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.LearningStyleType" size="large" fill="#409eff">
+                      <el-radio-button label="视觉型(偏好景观/展览)" value="视觉型(偏好景观/展览)" />
+                      <el-radio-button label="听觉型(偏好讲解/演出)" value="听觉型(偏好讲解/演出)" />
+                      <el-radio-button label="体验型(偏好互动参与)" value="体验型(偏好互动参与)" />
+                    </el-radio-group>
+                  </el-form-item>
+                  <br> -->
                 </el-form>
                 <template #footer>
                   <div class="drawer-footer">
                     <el-button @click="cancelBtn" size="large">取消</el-button>
-                    <el-button type="primary" @click="handleConfirm" size="large">确定</el-button>
+                    <el-button type="primary" @click="handleConfirm" size="large" :disabled="!isFormValid">确定</el-button>
                   </div>
                 </template>
               </el-drawer>
@@ -131,7 +139,7 @@
 
     <section ref="secondPanelRef" class="panel panel-2">
       <h1 text="2xl" justify="center">精选景点</h1>
-      <el-carousel :interval="4000" type="card" height="420px" class="custom-carousel">
+      <el-carousel :interval="4000" height="470px" class="custom-carousel" type="card">
         <el-carousel-item v-for="(img, index) in recommendPlaces" :key="index">
           <div class="carousel-item-content">
             <img :src="img" :alt="'place' + (index + 1)" class="carousel-image" />
@@ -149,7 +157,7 @@ import frontImg from '../assets/FRONT_IMG.png'
 import backImg from '../assets/BACK_IMG.png'
 import frontImg2 from '../assets/2FRONT.png'
 import backImg2 from '../assets/2BACK.png'
-import place1 from '../assets/place1.png'
+import place1 from '../assets/place1.webp'
 import place2 from '../assets/place2.png'
 import place3 from '../assets/place3.png'
 
@@ -158,6 +166,7 @@ const emit = defineEmits<{
 }>()
 
 const dialogFormVisible = ref(false)
+const formRef = ref();
 const form = reactive({
     MBTIPersonalityType: '',
     CulturalValueOrientation: '',
@@ -172,7 +181,24 @@ const form = reactive({
 
 })
 const formLabelWidth = '140px'
- 
+
+const formRules = {
+  MBTIPersonalityType: [{ required: true, message: '请选择您的MBTI人格类型', trigger: 'blur' }],
+  CulturalValueOrientation: [{ required: true, message: '请选择您的文化价值观', trigger: 'change' }],
+  HistorialTravelType: [{ required: true, message: '请选择您的历史旅游类型', trigger: 'change' }],
+  DecisionReferenceChannel: [{ required: true, message: '请选择您的决策参考渠道', trigger: 'change' }],
+  CulturalPreferenceType: [{ required: true, message: '请选择您的文化偏好类型', trigger: 'change' }],
+  RiskPreferenceLevel: [{ required: true, message: '请选择您的风险偏好等级', trigger: 'change' }],
+  TravelSocialScale: [{ required: true, message: '请选择您的旅游社会规模', trigger: 'change' }],
+  TravelBehaviorFrequency: [{ required: true, message: '请选择您的旅游行为频率', trigger: 'change' }],
+  SocialDecisionInfluenceDegree: [{ required: true, message: '请选择您的社会决策影响度', trigger: 'change' }],
+  LearningStyleType: [{ required: true, message: '请选择您的学习风格类型', trigger: 'change' }]
+}
+
+const isFormValid = computed(() => {
+  return Object.values(form).every(item => item !== '');
+})
+
 const parallaxScroll = ref(0)
 const parallaxMix = ref(0)
 let parallaxScrollEl: HTMLElement | null = null
@@ -200,16 +226,18 @@ const parallaxStyle = computed(() => {
   }
 })
 
-const handleConfirm = () => {
-  console.log('表单数据:', form)
+const handleConfirm = async () => {
+  if (!formRef.value) return
   
-  // 保存表单数据到 localStorage
-  localStorage.setItem('user-profile-form', JSON.stringify(form))
-  
-  // 关闭对话框并跳转到 AI 对话页面
-  dialogFormVisible.value = false
-  emit('navigate', 'aiDialogue')
-  afterConfirmMsgBox();
+  try {
+    await formRef.value.validate()
+    console.log('表单数据:', form)
+    localStorage.setItem('user-profile-form', JSON.stringify(form))
+    dialogFormVisible.value = false
+    emit('navigate', 'aiDialogue')
+  } catch (error) {
+    console.log('表单验证失败')
+  }
 }
 
 const cancelBtn = () => {
@@ -287,7 +315,7 @@ onUnmounted(() => {
 
 .custom-carousel {
   width: 100%;
-  max-width: 600px;
+  max-width: 2400px;
 }
 
 .carousel-item-content {
@@ -295,14 +323,20 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   height: 100%;
-  border-radius: 8px;
+  width: 100%;
   overflow: hidden;
 }
 
 .carousel-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.el-carousel__item {
+  background-color: transparent !important;
 }
 
 
