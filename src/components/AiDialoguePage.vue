@@ -335,8 +335,10 @@ const handleSendHidden = async (text: string) => {
   await sendMessage(text, false)
 }
 
-onMounted(() => {
-  loadSettings()
+onMounted(async () => {
+  await loadSettings()
+  await nextTick()
+  await new Promise(resolve => setTimeout(resolve, 300))
   checkAndSendUserProfile()
 })
 
@@ -345,7 +347,6 @@ const checkAndSendUserProfile = () => {
   if (savedForm) {
     try {
       const formData = JSON.parse(savedForm)
-      localStorage.removeItem('user-profile-form')
       
       const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：\n
                       1. MBTI性格类型（MBTIPersonalityType）: ${formData.MBTIPersonalityType || '未填写'}\n
@@ -363,27 +364,30 @@ const checkAndSendUserProfile = () => {
                       13. 旅游出行时长（TravelDuration）: ${formData.TravelDuration || '未填写'}\n
                       请用调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
       
-      sendUserProfileWithRetry(prompt, 3)
+      sendUserProfileWithRetry(prompt, formData)
     } catch (e) {
       console.error('加载用户画像失败', e)
     }
   }
 }
 
-const sendUserProfileWithRetry = async (prompt: string, retries: number) => {
-  for (let i = 0; i < retries; i++) {
+const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
+  const maxRetries = 5
+  for (let i = 0; i < maxRetries; i++) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 800 + i * 500))
+      await new Promise(resolve => setTimeout(resolve, 1000 + i * 800))
       await handleSendHidden(prompt)
+      localStorage.removeItem('user-profile-form')
       console.log('用户画像发送成功')
-      break
+      return true
     } catch (error) {
       console.error(`发送用户画像失败，第 ${i + 1} 次尝试:`, error)
-      if (i === retries - 1) {
-        console.error('用户画像发送最终失败')
+      if (i === maxRetries - 1) {
+        console.error('用户画像发送最终失败，数据保留在 localStorage 中')
       }
     }
   }
+  return false
 }
 </script>
 
