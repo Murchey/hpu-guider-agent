@@ -174,7 +174,7 @@ const md = new MarkdownIt({
   breaks: true
 })
 
-md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+md.renderer.rules.link_open = function (tokens: any[], idx: number, options: any, env: any, self: any) {
   const token = tokens[idx]
   token.attrSet('target', '_blank')
   token.attrSet('rel', 'noopener noreferrer')
@@ -363,11 +363,25 @@ const checkAndSendUserProfile = () => {
                       13. 旅游出行时长（TravelDuration）: ${formData.TravelDuration || '未填写'}\n
                       请用调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
       
-      setTimeout(() => {
-        handleSendHidden(prompt)
-      }, 500)
+      sendUserProfileWithRetry(prompt, 3)
     } catch (e) {
       console.error('加载用户画像失败', e)
+    }
+  }
+}
+
+const sendUserProfileWithRetry = async (prompt: string, retries: number) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800 + i * 500))
+      await handleSendHidden(prompt)
+      console.log('用户画像发送成功')
+      break
+    } catch (error) {
+      console.error(`发送用户画像失败，第 ${i + 1} 次尝试:`, error)
+      if (i === retries - 1) {
+        console.error('用户画像发送最终失败')
+      }
     }
   }
 }

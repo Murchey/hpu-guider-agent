@@ -177,8 +177,11 @@ import backImg from '../assets/BACK_IMG.png'
 import frontImg2 from '../assets/2FRONT.png'
 import backImg2 from '../assets/2BACK.png'
 import place1 from '../assets/place1.webp'
-import place2 from '../assets/place2.png'
-import place3 from '../assets/place3.png'
+import place2 from '../assets/place2.webp'
+import place3 from '../assets/place3.webp'
+import place4 from '../assets/place4.webp'
+import place5 from '../assets/place5.webp'
+import place6 from '../assets/place6.webp'
 
 const emit = defineEmits<{
   (e: 'navigate', tabName: string): void
@@ -214,7 +217,7 @@ let parallaxScrollEl: HTMLElement | null = null
 const secondPanelRef = ref<HTMLElement | null>(null)
 let secondPanelObserver: IntersectionObserver | null = null
 
-const recommendPlaces = [place1, place2, place3]
+const recommendPlaces = [place1, place2, place3, place4, place5, place6]
 
 const handleParallaxScroll = () => {
   if (!parallaxScrollEl) return
