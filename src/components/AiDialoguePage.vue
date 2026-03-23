@@ -45,11 +45,11 @@
       
       <div class="chat-input">
         <div class="chat-toolbar">
-          <el-select v-model="toolbarSelectA" placeholder="选择智能体工作模式" style="width: 200px">
-            <el-option label="工作模式：互动问答" value="a1" />
-            <el-option label="工作模式：景点介绍" value="a2" />
-          </el-select>
-          <el-button 
+          <span>工作模式：</span>
+            <div class="mode-change-btn">
+              <el-segmented v-model="modeValue" :options="modeOptions" />
+            </div>
+          <el-button
             class="chat-toolbar-clear"
             type="danger"
             :disabled="messages.length === 0 || isLoading"
@@ -101,12 +101,13 @@ const inputText = ref('')
 const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
 
-const toolbarSelectA = ref('a1')
-// const toolbarSelectB = ref('b1')
+const modeValue = ref('互动问答')
 
-const toolbarSelectALabel = computed(() => {
-  if (toolbarSelectA.value === 'a1') return '工作模式（task_type）：互动问答'
-  if (toolbarSelectA.value === 'a2') return '工作模式（task_type）：景点介绍'
+const modeOptions = ['互动问答', '景点介绍']
+
+const modeOptionsBtnGroup = computed(() => {
+  if (modeValue.value === '互动问答') return '工作模式（task_type）：互动问答'
+  if (modeValue.value === '景点介绍') return '工作模式（task_type）：景点介绍'
   return ''
 })
 
@@ -326,7 +327,7 @@ const handleSend = async () => {
   const text = inputText.value.trim()
   if (!text || isLoading.value) return
   inputText.value = ''
-  const prefix = toolbarSelectALabel.value
+  const prefix = modeOptionsBtnGroup.value
   const prefixedText = prefix && !text.startsWith(`${prefix}\n`) ? `${prefix}\n${text}` : text
   await sendMessage(prefixedText, true)
 }
