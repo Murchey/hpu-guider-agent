@@ -10,7 +10,7 @@
       </el-tab-pane>
       
       <el-tab-pane label="AI对话" name="aiDialogue">
-        <AiDialoguePage />
+        <AiDialoguePage :active-tab="activeName" />
       </el-tab-pane>
       
       <el-tab-pane label="设置" name="settingPage">

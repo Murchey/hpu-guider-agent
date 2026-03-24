@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, watch } from 'vue'
 import { Loading, User, ChatDotRound } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
@@ -95,6 +95,10 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
 }
+
+const props = defineProps<{
+  activeTab?: string
+}>()
 
 const messages = ref<Message[]>([])
 const inputText = ref('')
@@ -228,7 +232,15 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     return
   }
 
-  const messagesForRequest: Message[] = [...messages.value, { role: 'user', content: text }]
+  // 如果是隐藏发送（如画像），则不将其直接推入对话列表，但需要包含在请求中
+  const currentMessages = [...messages.value]
+  const requestMessages = currentMessages.map(m => ({
+    role: m.role,
+    content: m.content
+  }))
+  
+  // 将当前消息加入请求列表
+  requestMessages.push({ role: 'user', content: text })
 
   if (showUserMessage) {
     messages.value.push({ role: 'user', content: text })
@@ -245,41 +257,15 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       throw new Error('API 地址不能为空，请在设置中配置正确的 API 地址')
     }
     
-    let requestData: any = {}
     let headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
     }
 
-    if (provider === 'zhipu') {
-      headers['Authorization'] = `Bearer ${apiKey}`
-      requestData = {
-        model: model,
-        messages: messagesForRequest.map(m => ({
-          role: m.role,
-          content: m.content
-        })),
-        stream: false
-      }
-    } else if (provider === 'qwen') {
-      headers['Authorization'] = `Bearer ${apiKey}`
-      requestData = {
-        model: model,
-        messages: messagesForRequest.map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content
-        })),
-        stream: false
-      }
-    } else {
-      headers['Authorization'] = `Bearer ${apiKey}`
-      requestData = {
-        model: model,
-        messages: messagesForRequest.map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content
-        })),
-        stream: false
-      }
+    const requestData = {
+      model: model,
+      messages: requestMessages,
+      stream: false
     }
 
     const response = await axios.post(
@@ -291,13 +277,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       }
     )
 
-    let aiContent = ''
-    
-    if (provider === 'zhipu') {
-      aiContent = response.data.choices?.[0]?.message?.content || ''
-    } else {
-      aiContent = response.data.choices?.[0]?.message?.content || ''
-    }
+    let aiContent = response.data.choices?.[0]?.message?.content || ''
 
     if (!aiContent) {
       aiContent = JSON.stringify(response.data, null, 2)
@@ -333,6 +313,9 @@ const handleSend = async () => {
 }
 
 const handleSendHidden = async (text: string) => {
+  if (isLoading.value) {
+    throw new Error('AI 正在处理上一条消息，请稍后')
+  }
   await sendMessage(text, false)
 }
 
@@ -341,6 +324,12 @@ onMounted(async () => {
   await nextTick()
   await new Promise(resolve => setTimeout(resolve, 300))
   checkAndSendUserProfile()
+})
+
+watch(() => props.activeTab, (newTab) => {
+  if (newTab === 'aiDialogue') {
+    checkAndSendUserProfile()
+  }
 })
 
 const checkAndSendUserProfile = () => {
