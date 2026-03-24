@@ -171,7 +171,6 @@ import frontImg from '../assets/FRONT_IMG.png'
 import backImg from '../assets/BACK_IMG.png'
 import frontImg2 from '../assets/2FRONT.png'
 import backImg2 from '../assets/2BACK.png'
-import drawerBack from '../assets/DRAWER_BACK.png'
 import place1 from '../assets/place1.webp'
 import place2 from '../assets/place2.webp'
 import place3 from '../assets/place3.webp'
@@ -532,32 +531,25 @@ html.dark .card-header h2 {
   background-color: rgba(0, 0, 0, 0.55) !important;
 }
 
-.info-drawer :deep(.el-drawer) {
-  background-image: url('../assets/DRAWER_BACK.png');
-  background-size: cover;
-  background-position: center;
-}
-
 .info-drawer :deep(.el-drawer__header) {
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
-.info-drawer :deep(.el-drawer__title) {
-  color: #000000 !important;
-  font-weight: bold;
-}
-
 .info-drawer :deep(.el-drawer__body) {
   position: relative;
-  background-color: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(4px);
 }
 
-.info-drawer :deep(.el-form-item__label) {
-  color: #000000 !important;
-  font-weight: bold;
+.info-drawer :deep(.el-drawer__body)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }
 
 .drawer-footer {
