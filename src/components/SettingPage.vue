@@ -5,10 +5,7 @@
         <div class="card-header">API 手动配置</div>
       </template>
       <p class="tips">
-        已移除 API 表单配置界面。请直接修改本文件 script 中的 MANUAL_API_SETTINGS 常量。
-      </p>
-      <p class="tips">
-        修改后刷新页面即可生效，配置会自动写入 localStorage（键名：ai-chat-settings）。
+        已移除 API 表单配置界面。
       </p>
     </el-card>
 
