@@ -119,7 +119,8 @@ const apiSettings = ref({
   provider: 'openai',
   baseURL: '',
   apiKey: '',
-  model: 'gpt-3.5-turbo'
+  model: 'gpt-3.5-turbo',
+  botId: ''
 })
 
 const isSettingsLoaded = ref(false)
@@ -145,6 +146,11 @@ const providerConfigs: Record<string, { baseURL: string; model: string; name: st
     model: 'qwen-turbo',
     name: '通义千问'
   },
+  coze: {
+    baseURL: 'https://api.coze.cn',
+    model: '',
+    name: 'Coze'
+  },
   custom: {
     baseURL: '',
     model: '',
@@ -157,14 +163,15 @@ const currentProvider = computed(() => {
 })
 
 const welcomeMessage = computed(() => {
-  return `与 文途智行 开始对话`
+  return `与 ${currentProvider.value} 开始对话`
 })
 
 const loadSettings = () => {
   const saved = localStorage.getItem('ai-chat-settings')
   if (saved) {
     try {
-      apiSettings.value = { ...apiSettings.value, ...JSON.parse(saved) }
+      const parsed = JSON.parse(saved)
+      apiSettings.value = { ...apiSettings.value, ...parsed }
       isSettingsLoaded.value = true
     } catch (e) {
       console.error('加载设置失败', e)
@@ -250,37 +257,104 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
   isLoading.value = true
 
   try {
-    const { baseURL, apiKey, model, provider } = apiSettings.value
+    const { baseURL, apiKey, model, provider, botId } = apiSettings.value
     
     let finalBaseURL = baseURL || providerConfigs[provider]?.baseURL || ''
     if (!finalBaseURL) {
       throw new Error('API 地址不能为空，请在设置中配置正确的 API 地址')
     }
-    
-    let headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    }
 
-    const requestData = {
-      model: model,
-      messages: requestMessages,
-      stream: false
-    }
+    let aiContent = ''
 
-    const response = await axios.post(
-      `${finalBaseURL}/chat/completions`,
-      requestData,
-      {
-        headers,
-        timeout: 120000
+    if (provider === 'coze') {
+      if (!botId) {
+        throw new Error('Coze 模式下必须配置 Bot ID')
       }
-    )
+      
+      // Coze v3 chat API
+      const chatResponse = await axios.post(
+        `${finalBaseURL}/v3/chat`,
+        {
+          bot_id: botId,
+          user_id: 'user_' + Math.random().toString(36).substr(2, 9),
+          additional_messages: [{
+            role: 'user',
+            content: text,
+            content_type: 'text'
+          }],
+          stream: false
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
 
-    let aiContent = response.data.choices?.[0]?.message?.content || ''
+      const chatData = chatResponse.data.data
+      if (!chatData || !chatData.id) {
+        throw new Error('Coze 对话创建失败: ' + JSON.stringify(chatResponse.data))
+      }
+
+      const chatId = chatData.id
+      const conversationId = chatData.conversation_id
+
+      // 轮询查询对话状态
+      let status = 'in_progress'
+      let pollCount = 0
+      while (status === 'in_progress' && pollCount < 60) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        const retrieveRes = await axios.get(
+          `${finalBaseURL}/v3/chat/retrieve?chat_id=${chatId}&conversation_id=${conversationId}`,
+          {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          }
+        )
+        status = retrieveRes.data.data.status
+        pollCount++
+      }
+
+      if (status === 'completed') {
+        const messageListRes = await axios.get(
+          `${finalBaseURL}/v3/chat/message/list?chat_id=${chatId}&conversation_id=${conversationId}`,
+          {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          }
+        )
+        const assistantMsg = messageListRes.data.data.find((m: any) => m.role === 'assistant' && m.type === 'answer')
+        aiContent = assistantMsg ? assistantMsg.content : '未找到回复内容'
+      } else {
+        throw new Error('Coze 对话超时或失败: ' + status)
+      }
+
+    } else {
+      // OpenAI 兼容 API
+      let headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+
+      const requestData = {
+        model: model,
+        messages: requestMessages,
+        stream: false
+      }
+
+      const response = await axios.post(
+        `${finalBaseURL}/chat/completions`,
+        requestData,
+        {
+          headers,
+          timeout: 120000
+        }
+      )
+
+      aiContent = response.data.choices?.[0]?.message?.content || ''
+    }
 
     if (!aiContent) {
-      aiContent = JSON.stringify(response.data, null, 2)
+      aiContent = 'AI 未返回有效回复'
     }
     
     messages.value.push({ role: 'assistant', content: aiContent })

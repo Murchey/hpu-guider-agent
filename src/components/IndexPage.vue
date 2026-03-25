@@ -27,6 +27,8 @@
                 size="900px"
                 class="info-drawer"
                 direction="rtl"
+                :z-index="3000"
+                append-to-body
               >
                 <el-form :model="form" class="profile-form">
                   <el-form-item label="你的MBTI性格代码" :label-width="formLabelWidth">

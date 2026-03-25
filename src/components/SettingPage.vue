@@ -5,7 +5,7 @@
         <div class="card-header">API 手动配置</div>
       </template>
       <p class="tips">
-        已移除 API 表单配置界面。
+        API 表单配置在后台。
       </p>
     </el-card>
 
@@ -35,14 +35,16 @@ import { ref, onMounted } from 'vue'
 const isDarkMode = ref(false)
 
 const MANUAL_API_SETTINGS = {
-  // provider 可选：openai / siliconflow / zhipu / qwen / custom
-  provider: 'siliconflow',
-  // baseURL 直接填写对应服务的兼容地址
-  baseURL: 'https://api.siliconflow.cn/v1',
-  // apiKey 填写你自己的密钥（不要提交到公开仓库）
+  // provider 可选：openai / siliconflow / zhipu / qwen / coze / custom
+  provider: 'coze',
+  // Coze API 地址 (国内: https://api.coze.cn/v3/chat | 国际: https://api.coze.com/v3/chat)
+  baseURL: 'https://api.coze.cn/v3/chat',
+  // apiKey 填写你的 Personal Access Token
   apiKey: '',
-  // model 填写要调用的模型名
-  model: 'Qwen/Qwen2.5-7B-Instruct'
+  // botId 填写你的 Bot ID (Coze 平台机器人页面 URL 中的那一串数字)
+  botId: '',
+  // model 可选 (Coze 模式下该项通常不生效，由 Bot ID 决定)
+  model: ''
 }
 
 const applyManualApiSettings = () => {
