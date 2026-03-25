@@ -5,7 +5,11 @@
         <div class="card-header">API 手动配置</div>
       </template>
       <p class="tips">
-        API 表单配置在后台。
+        当前API配置为：{{ MANUAL_API_SETTINGS.provider }}
+        <br>
+        Bot ID为：{{ MANUAL_API_SETTINGS.botId }}
+        <br>
+        API Base URL为：{{ MANUAL_API_SETTINGS.baseURL }}
       </p>
     </el-card>
 
