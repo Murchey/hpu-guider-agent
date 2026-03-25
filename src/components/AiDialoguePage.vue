@@ -136,16 +136,6 @@ const providerConfigs: Record<string, { baseURL: string; model: string; name: st
     model: 'Qwen/Qwen2.5-7B-Instruct',
     name: '硅基流动'
   },
-  zhipu: {
-    baseURL: 'https://open.bigmodel.cn/api/paas/v4',
-    model: 'glm-4',
-    name: '智谱AI'
-  },
-  qwen: {
-    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    model: 'qwen-turbo',
-    name: '通义千问'
-  },
   coze: {
     baseURL: 'https://api.coze.cn',
     model: '',
@@ -424,20 +414,13 @@ const checkAndSendUserProfile = () => {
       const formData = JSON.parse(savedForm)
       
       const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：\n
-                      1. MBTI性格类型（MBTIPersonalityType）: ${formData.MBTIPersonalityType || '未填写'}\n
-                      2. 文化价值观倾向（CulturalValueOrientation）: ${formData.CulturalValueOrientation || '未填写'}\n
-                      3. 历史旅行类型（HistorialTravelType）: ${formData.HistorialTravelType || '未填写'}\n
-                      4. 决策参考渠道（DecisionReferenceChannel）: ${formData.DecisionReferenceChannel || '未填写'}\n
-                      5. 文化偏好类型（CulturalPreferenceType）: ${formData.CulturalPreferenceType || '未填写'}\n
-                      6. 风险偏好程度（RiskPreferenceLevel）: ${formData.RiskPreferenceLevel || '未填写'}\n
-                      7. 出行方式（TravelSocialScale）: ${formData.TravelSocialScale || '未填写'}\n
-                      8. 出行频率（TravelBehaviorFrequency）: ${formData.TravelBehaviorFrequency || '未填写'}\n
-                      9. 决策自主程度（SocialDecisionInfluenceDegree）: ${formData.SocialDecisionInfluenceDegree || '未填写'}\n
-                      10. 学习风格（LearningStyleType）: ${formData.LearningStyleType || '未填写'}\n
-                      11. 出行人数规模（TravelGroupSize）: ${formData.TravelGroupSize || '未填写'}\n
-                      12. 总体预算（TotalBudget）: ${formData.TotalBudget || '未填写'}\n
-                      13. 旅游出行时长（TravelDuration）: ${formData.TravelDuration || '未填写'}\n
-                      请用调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
+                      1. 旅行人数（travelNumber）: ${formData.travelNumber || '未填写'} 人\n
+                      2. 旅行天数（travelDays）: ${formData.travelDays || '未填写'} 天\n
+                      3. 旅行预算（travelBudget）: ${formData.travelBudget || '未填写'} 元\n
+                      4. 出行风格（travelStyle）: ${formData.travelStyle || '未填写'}\n
+                      5. 行程核心关注点（travelFocus）: ${Array.isArray(formData.travelFocus) ? formData.travelFocus.join('、') : (formData.travelFocus || '未填写')}\n
+                      6. 个性化出行习惯（customHabit）: ${(Array.isArray(formData.customHabit) ? formData.customHabit.join('、') : (formData.customHabit || '未填写')) + '。' + formData.additionalRequirements}\n
+                      请调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
       
       sendUserProfileWithRetry(prompt, formData)
     } catch (e) {

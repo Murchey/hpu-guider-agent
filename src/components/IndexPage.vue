@@ -31,113 +31,45 @@
                 append-to-body
               >
                 <el-form :model="form" class="profile-form">
-                  <el-form-item label="你的MBTI性格代码" :label-width="formLabelWidth">
-                    <el-input v-model="form.MBTIPersonalityType" style="width: 100%" placeholder="输入MBTI代码" />
+                  <el-form-item label="旅行人数" :label-width="formLabelWidth">
+                    <el-input v-model="form.travelNumber" style="width: 100%" placeholder="输入旅行人数(个)" />
                   </el-form-item>
-                  <el-form-item label="文化价值倾向" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.CulturalValueOrientation" size="large" fill="#409eff">
-                      <el-radio-button label="传统文化" value="传统文化" />
-                      <el-radio-button label="潮流创新" value="潮流创新" />
-                      <el-radio-button label="人文情怀" value="人文情怀" />
-                      <el-radio-button label="探险挑战" value="探险挑战" />
+                  <br>
+                  <el-form-item label="旅行天数" :label-width="formLabelWidth">
+                    <el-input v-model="form.travelDays" style="width: 100%" placeholder="输入旅行消耗时间(天)" />
+                  </el-form-item>
+                  <br>
+                  <el-form-item label="旅行预算" :label-width="formLabelWidth">
+                    <el-input v-model="form.travelBudget" style="width: 100%" placeholder="输入您期望的预算(元)" />
+                  </el-form-item>
+                  <br>
+                  <el-form-item label="出行风格" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.travelStyle" size="large" fill="#409eff">
+                      <el-radio-button label="松弛度假" value="松弛度假" />
+                      <el-radio-button label="高效打卡" value="高效打卡" />
+                      <el-radio-button label="人文深度" value="人文深度" />
+                      <el-radio-button label="自然户外" value="自然户外" />
+                      <el-radio-button label="美食寻味" value="美食寻味" />
+                      <el-radio-button label="城市漫游" value="城市漫游" />
                     </el-radio-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="经历旅游类型" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.HistorialTravelType" size="large" fill="#409eff">
-                      <el-radio-button label="城市观光" value="城市观光" />
-                      <el-radio-button label="户外徒步" value="户外徒步" />
-                      <el-radio-button label="海滨度假" value="海滨度假" />
-                      <el-radio-button label="古镇体验" value="古镇体验" />
-                      <el-radio-button label="主题乐园" value="主题乐园" />
-                      <el-radio-button label="文化遗址打卡" value="文化遗址打卡" />
-                    </el-radio-group>
+                  <el-form-item label="行程核心关注点" :label-width="formLabelWidth">
+                    <el-checkbox-group v-model="form.travelFocus" size="large">
+                      <el-checkbox-button v-for="travelFocusOption in travelFocusOptions" :key="travelFocusOption" :label="travelFocusOption" :value="travelFocusOption" />
+                    </el-checkbox-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="计划旅游渠道" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.DecisionReferenceChannel" size="large" fill="#409eff">
-                      <el-radio-button label="社交媒体" value="社交媒体" />
-                      <el-radio-button label="旅游攻略网站" value="旅游攻略网站" />
-                      <el-radio-button label="亲友推荐" value="亲友推荐" />
-                      <el-radio-button label="官方文旅平台" value="官方文旅平台" />
-                    </el-radio-group>
+                  <el-form-item label="个性化出行习惯" :label-width="formLabelWidth">
+                    <el-checkbox-group v-model="form.customHabit" size="large">
+                      <el-checkbox-button v-for="travelCustomOption in travelCustomOptions" :key="travelCustomOption" :label="travelCustomOption" :value="travelCustomOption" :disabled="isCustomOptionsDisabled(travelCustomOption)"/>
+                    </el-checkbox-group>
                   </el-form-item>
                   <br>
-                  <el-form-item label="对新体验偏好" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.CulturalPreferenceType" size="large" fill="#409eff">
-                      <el-radio-button label="历史文化" value="历史文化" />
-                      <el-radio-button label="民俗文化" value="民俗文化" />
-                      <el-radio-button label="宗教文化" value="宗教文化" />
-                      <el-radio-button label="现代流行文化" value="现代流行文化" />
-                      <el-radio-button label="艺术文化" value="艺术文化" />
-                      <el-radio-button label="自然生态文化" value="自然生态文化" />
-                    </el-radio-group>
+                   <el-form-item label="其他个性要求" :label-width="formLabelWidth" >
+                    <el-input v-model="form.additionalRequirements" style="width: 100%" placeholder="输入其他个性要求" :disabled="isNeedAdditionInput"/>
                   </el-form-item>
-                  <br>
-                  <el-form-item label="风险偏好程度" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.RiskPreferenceLevel" size="large" fill="#409eff">
-                      <el-radio-button label="风险规避（无刺激体验）" value="风险规避（无刺激体验）" />
-                      <el-radio-button label="风险中性（适当刺激体验）" value="风险中性（适当刺激体验）" />
-                      <el-radio-button label="风险偏好（较多刺激体验）" value="风险偏好（较多刺激体验）" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出行社交规模" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.TravelSocialScale" size="large" fill="#409eff">
-                      <el-radio-button label="独自出行" value="独自出行" />
-                      <el-radio-button label="情侣" value="情侣" />
-                      <el-radio-button label="家庭亲子" value="家庭亲子" />
-                      <el-radio-button label="团队" value="团队" />
-                      <el-radio-button label="朋友结伴" value="朋友结伴" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出行活动频率" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.TravelBehaviorFrequency" size="large" fill="#409eff">
-                      <el-radio-button label="高频(每月1次+)" value="高频(每月1次+)" />
-                      <el-radio-button label="中频(每季度1次)" value="中频(每季度1次)" />
-                      <el-radio-button label="低频(每年1次及以下)" value="低频(每年1次及以下)" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="决策受影响度" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.SocialDecisionInfluenceDegree" size="large" fill="#409eff">
-                      <el-radio-button label="完全自主决策" value="完全自主决策" />
-                      <el-radio-button label="参考社交意见" value="参考社交意见" />
-                      <el-radio-button label="受社交推荐主导" value="受社交推荐主导" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="学习风格类型" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.LearningStyleType" size="large" fill="#409eff">
-                      <el-radio-button label="视觉型(偏好景观/展览)" value="视觉型(偏好景观/展览)" />
-                      <el-radio-button label="听觉型(偏好讲解/演出)" value="听觉型(偏好讲解/演出)" />
-                      <el-radio-button label="体验型(偏好互动参与)" value="体验型(偏好互动参与)" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="旅游同行人数" :label-width="formLabelWidth">
-                    <el-input v-model="form.TravelGroupSize" style="width: 100%" placeholder="输入出行人数"/>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出行总体预算" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.TotalBudget" size="large" fill="#409eff">
-                      <el-radio-button label="2000元及以下" value="2000元及以下" />
-                      <el-radio-button label="5000元及以下" value="5000元及以下" />
-                      <el-radio-button label="1万元及以下" value="1万元及以下" />
-                      <el-radio-button label="大于1万元" value="大于1万元" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="旅游出行时长" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.TravelDuration" size="large" fill="#409eff">
-                      <el-radio-button label="3天内" value="3天内" />
-                      <el-radio-button label="3-7天" value="3-7天" />
-                      <el-radio-button label="8-14天" value="8-14天" />
-                      <el-radio-button label="15天及以上" value="15天及以上" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
+                  
                 </el-form>
                 <template #footer>
                   <div class="drawer-footer">
@@ -190,27 +122,47 @@ const emit = defineEmits<{
 
 const dialogFormVisible = ref(false)
 const form = reactive({
-    MBTIPersonalityType: '',
-    CulturalValueOrientation: '',
-    HistorialTravelType: '',
-    DecisionReferenceChannel: '',
-    CulturalPreferenceType: '',
-    RiskPreferenceLevel:'',
-    TravelSocialScale: '',
-    TravelBehaviorFrequency:'',
-    SocialDecisionInfluenceDegree: '',
-    LearningStyleType: '',
-    TravelGroupSize:'',
-    TotalBudget:'',
-    TravelDuration:''
-
+    travelNumber: '',
+    travelDays: '',
+    travelBudget: '',
+    travelStyle: '',
+    travelFocus: [],
+    customHabit: [],
+    additionalRequirements: ''
 })
+
+// 判断是否需要输入特别需求
+const isNeedAdditionInput = computed(() => {
+  return !(form.customHabit as string[]).includes('其他');
+})
+
+// 判断是否禁用其他多选项
+const isCustomOptionsDisabled = (option: string) => {
+  const selected = form.customHabit as string[];
+  if (option === '无特别要求') {
+    // 如果已经选中了其他任何选项，则禁用“无特别要求”
+    return selected.length > 0 && !selected.includes('无特别要求');
+  } else {
+    // 如果已经选中了“无特别要求”，则禁用其他所有选项
+    return selected.includes('无特别要求');
+  }
+}
+
+const travelFocusOptions = [
+  '预算成本可控', '交通出行便利', '客流环境舒适', '拍照出片友好', '安全保障完善', '行程自由度高', '在地原生性强'
+]
+
+const travelCustomOptions = [
+  '无特别要求', '拒绝早起赶行程', '不走回头路', '有清真/素食等饮食需求', '有过敏避讳', '其他'
+]
+
 const formLabelWidth = '140px'
 
 //表单验证函数：确保每个选项问题都有值
 const isFormValid = computed(() => {
-  return Object.values(form).every(item => item !== '');
-})
+  return form.travelNumber && form.travelDays && form.travelBudget && form.travelStyle && 
+         form.travelFocus.length > 0 && form.customHabit.length > 0;
+});
 
 const parallaxScroll = ref(0)
 const parallaxMix = ref(0)
