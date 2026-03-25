@@ -27,7 +27,6 @@
                 size="900px"
                 class="info-drawer"
                 direction="rtl"
-                :z-index="3000"
                 append-to-body
               >
                 <el-form :model="form" class="profile-form">
@@ -45,18 +44,93 @@
                   <br>
                   <el-form-item label="出行风格" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.travelStyle" size="large" fill="#409eff">
+                      
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">核心诉求为身心放松，主打无计划慢节奏，不赶景点、不强制打卡，<br/>
+                          以酒店 / 民宿休憩、本地随性闲逛为核心，全程拒绝高强度奔波</div></template>
                       <el-radio-button label="松弛度假" value="松弛度假" />
+                      </el-tooltip>
+
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">追求单位时间内游览效率最大化，行程紧凑、目标明确，<br/>
+                          通过科学规划覆盖尽可能多的核心景点与打卡位</div></template>
                       <el-radio-button label="高效打卡" value="高效打卡" />
+                      </el-tooltip>
+
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">侧重历史脉络、建筑美学、艺术展览或非遗民俗，<br/>
+                          愿意在单一地点停留较长时间进行深度学习与感悟</div></template>
                       <el-radio-button label="人文深度" value="人文深度" />
+                      </el-tooltip>
+
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">亲近自然地理，包含徒步、登山、观鸟、露营等轻量或专业户外活动，<br/>
+                          对自然风光、生态环境有极高向往</div></template>
                       <el-radio-button label="自然户外" value="自然户外" />
+                      </el-tooltip>
+
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">以“吃”为行程核心驱动力，寻访地道老字号、街头小吃或特色餐厅，<br/>
+                          通过味觉深度体验城市烟火气</div></template>
                       <el-radio-button label="美食寻味" value="美食寻味" />
+                      </el-tooltip>
+
+                      <el-tooltip 
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content><div style="font-size: 14px;">主打随机感，通过 CityWalk 方式探索城市街巷，<br/>
+                          挖掘被大众忽略的社区细节与城市肌理</div></template>
                       <el-radio-button label="城市漫游" value="城市漫游" />
+                      </el-tooltip>
+
                     </el-radio-group>
                   </el-form-item>
                   <br>
                   <el-form-item label="行程核心关注点" :label-width="formLabelWidth">
                     <el-checkbox-group v-model="form.travelFocus" size="large">
-                      <el-checkbox-button v-for="travelFocusOption in travelFocusOptions" :key="travelFocusOption" :label="travelFocusOption" :value="travelFocusOption" />
+                      <el-tooltip 
+                        v-for="(travelFocusOption, index) in travelFocusOptions" 
+                        :key="travelFocusOption"
+                        placement="top"
+                        transition="none"
+                        :show-after="0"
+                        :hide-after="0"
+                      >
+                        <template #content>
+                          <div style="font-size: 14px; max-width: 200px; line-height: 1.4;">
+                            {{ travelFocusTips[index] }}
+                          </div>
+                        </template>
+                        <el-checkbox-button :label="travelFocusOption" :value="travelFocusOption" />
+                      </el-tooltip>
                     </el-checkbox-group>
                   </el-form-item>
                   <br>
@@ -154,6 +228,16 @@ const travelFocusOptions = [
 
 const travelCustomOptions = [
   '无特别要求', '拒绝早起赶行程', '不走回头路', '有清真/素食等饮食需求', '有过敏避讳', '其他'
+]
+
+const travelFocusTips = [
+  '全程花费符合心理预期，优先选择高匹配度的交通、住宿、游玩项目，严控非必要额外支出，全预算档位通用',
+  '大交通与目的地内通勤便捷，少换乘、少长途奔波，公共交通覆盖完善或自驾友好',
+  '目的地人流量少、不拥挤，优先小众目的地 / 错峰出行，拒绝长时间排队与扎堆场景',
+  '目的地景观、场景适配拍照打卡，有特色出片点，光线与环境适合拍摄创作',
+  '目的地治安良好、户外路线有成熟安全配套、夜间出行便利，全程无高风险场景',
+  '行程可随时调整、无强制时间节点，优先选择无跟团约束、可灵活变动的出行方案',
+  '优先选择本地原生玩法、本土商户，拒绝商业化网红套路，能体验到目的地原汁原味的生活与特色，全出行风格通用'
 ]
 
 const formLabelWidth = '140px'

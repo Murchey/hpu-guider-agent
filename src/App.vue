@@ -210,4 +210,10 @@ html.dark .info-dialog .el-form-item__label {
   /* 问卷左侧问题字体颜色 */
   color: #e4e7ed;
 }
+
+/* 设置 tooltip 淡入淡出时长为 0 */
+.el-popper {
+  transition: none !important;
+  animation: none !important;
+}
 </style>
