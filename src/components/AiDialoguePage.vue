@@ -171,6 +171,7 @@ const loadSettings = () => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
+      console.log('加载到的 API 配置:', { ...parsed, apiKey: parsed.apiKey ? '***' : '未设置' })
       apiSettings.value = { ...apiSettings.value, ...parsed }
       isSettingsLoaded.value = true
     } catch (e) {
@@ -234,6 +235,9 @@ const clearChat = () => {
 const sendMessage = async (text: string, showUserMessage: boolean) => {
   if (!text || isLoading.value) return
 
+  // 每次发送前重新加载一次设置，确保读取到最新的 API Key
+  loadSettings()
+
   if (!apiSettings.value.apiKey) {
     ElMessage.warning('请先在设置中配置 API Key')
     return
@@ -264,6 +268,9 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       throw new Error('API 地址不能为空，请在设置中配置正确的 API 地址')
     }
 
+    // 格式化 URL，移除结尾的斜杠和冗余的 /v3/chat
+    finalBaseURL = finalBaseURL.replace(/\/+$/, '').replace(/\/v3\/chat$/, '')
+
     let aiContent = ''
 
     if (provider === 'coze') {
@@ -288,7 +295,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 1200000 // 延长至 20 分钟
         }
       )
 
@@ -303,12 +311,13 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       // 轮询查询对话状态
       let status = 'in_progress'
       let pollCount = 0
-      while (status === 'in_progress' && pollCount < 60) {
+      while (status === 'in_progress' && pollCount < 1200) { // 轮询上限也增加到 20 分钟 (1200秒)
         await new Promise(resolve => setTimeout(resolve, 1000))
         const retrieveRes = await axios.get(
           `${finalBaseURL}/v3/chat/retrieve?chat_id=${chatId}&conversation_id=${conversationId}`,
           {
-            headers: { 'Authorization': `Bearer ${apiKey}` }
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            timeout: 30000 // 单次查询超时 30s
           }
         )
         status = retrieveRes.data.data.status
@@ -319,7 +328,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         const messageListRes = await axios.get(
           `${finalBaseURL}/v3/chat/message/list?chat_id=${chatId}&conversation_id=${conversationId}`,
           {
-            headers: { 'Authorization': `Bearer ${apiKey}` }
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            timeout: 60000 // 获取列表超时 60s
           }
         )
         const assistantMsg = messageListRes.data.data.find((m: any) => m.role === 'assistant' && m.type === 'answer')
@@ -346,7 +356,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         requestData,
         {
           headers,
-          timeout: 120000
+          timeout: 1200000 // 延长至 20 分钟
         }
       )
 
@@ -402,6 +412,7 @@ onMounted(async () => {
 
 watch(() => props.activeTab, (newTab) => {
   if (newTab === 'aiDialogue') {
+    loadSettings() // 切换到 AI 页面时重新加载配置
     checkAndSendUserProfile()
   }
 })

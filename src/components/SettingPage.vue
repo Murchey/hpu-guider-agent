@@ -37,12 +37,13 @@ const isDarkMode = ref(false)
 const MANUAL_API_SETTINGS = {
   // provider 可选：openai / siliconflow / zhipu / qwen / coze / custom
   provider: 'coze',
-  // Coze API 地址 (国内: https://api.coze.cn/v3/chat | 国际: https://api.coze.com/v3/chat)
-  baseURL: 'https://api.coze.cn/v3/chat',
+  // Coze 根地址 (国内版: https://api.coze.cn | 国际版: https://api.coze.com)
+  // 注意：后面不要加 /v3/chat，代码会自动拼接
+  baseURL: 'https://api.coze.cn',
   // apiKey 填写你的 Personal Access Token
-  apiKey: '',
-  // botId 填写你的 Bot ID (Coze 平台机器人页面 URL 中的那一串数字)
-  botId: '',
+  apiKey: 'pat_oHBIFlgTQsZJF3sOhpDjMjCzD02vo2v7ccPlOusFpqLXdLyx2KmKMByKTRXLnq1I',
+  // botId 填写你的 Bot ID
+  botId: '7619989140863778868',
   // model 可选 (Coze 模式下该项通常不生效，由 Bot ID 决定)
   model: ''
 }
@@ -50,6 +51,9 @@ const MANUAL_API_SETTINGS = {
 const applyManualApiSettings = () => {
   localStorage.setItem('ai-chat-settings', JSON.stringify(MANUAL_API_SETTINGS))
 }
+
+// 立即执行一次，确保 HMR 时也能同步最新的配置
+applyManualApiSettings()
 
 const applyTheme = (isDark: boolean) => {
   document.documentElement.classList.toggle('dark', isDark)
