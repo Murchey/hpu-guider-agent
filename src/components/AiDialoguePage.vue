@@ -189,8 +189,8 @@ const modeValue = ref('互动问答')
 const modeOptions = ['互动问答', '景点介绍']
 
 const modeOptionsBtnGroup = computed(() => {
-  if (modeValue.value === '互动问答') return '工作模式（task_type）：互动问答'
-  if (modeValue.value === '景点介绍') return '工作模式（task_type）：景点介绍'
+  if (modeValue.value === '互动问答') return 'model：互动问答\n工作模式（task_type）：互动问答\n'
+  if (modeValue.value === '景点介绍') return 'model：景点推荐\n工作模式（task_type）：景点介绍\n'
   return ''
 })
 
