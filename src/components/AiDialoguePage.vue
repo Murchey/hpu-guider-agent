@@ -81,6 +81,46 @@
         </div>
       </div>
     </div>
+
+    <!-- 场景推荐选择对话框 -->
+    <el-dialog
+      v-model="sceneDialogVisible"
+      title="请选择您感兴趣的方案"
+      width="500px"
+      center
+      append-to-body
+      class="scene-dialog"
+    >
+      <div class="scene-buttons-container">
+        <el-button 
+          v-if="sceneButtons.btn1" 
+          type="primary" 
+          plain 
+          class="scene-btn" 
+          @click="handleSceneButtonClick(1, sceneButtons.btn1)"
+        >
+          {{ sceneButtons.btn1 }}
+        </el-button>
+        <el-button 
+          v-if="sceneButtons.btn2" 
+          type="primary" 
+          plain 
+          class="scene-btn" 
+          @click="handleSceneButtonClick(2, sceneButtons.btn2)"
+        >
+          {{ sceneButtons.btn2 }}
+        </el-button>
+        <el-button 
+          v-if="sceneButtons.btn3" 
+          type="primary" 
+          plain 
+          class="scene-btn" 
+          @click="handleSceneButtonClick(3, sceneButtons.btn3)"
+        >
+          {{ sceneButtons.btn3 }}
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -104,6 +144,14 @@ const messages = ref<Message[]>([])
 const inputText = ref('')
 const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
+
+// 场景推荐对话框状态
+const sceneDialogVisible = ref(false)
+const sceneButtons = ref({
+  btn1: '',
+  btn2: '',
+  btn3: ''
+})
 
 const modeValue = ref('互动问答')
 
@@ -207,6 +255,14 @@ const formatAssistantMessage = (text: string): string => {
 
 const handleNewLine = () => {
   inputText.value += '\n'
+}
+
+// 场景推荐按钮点击处理函数 (占位)
+const handleSceneButtonClick = (btnIndex: number, btnText: string) => {
+  console.log(`点击了场景按钮 ${btnIndex}: ${btnText}`)
+  sceneDialogVisible.value = false
+  // 这里补充发送给 AI 的逻辑
+  sendMessage(btnText, false);
 }
 
 const clearChat = () => {
@@ -355,6 +411,26 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
 
     if (!aiContent) {
       aiContent = 'AI 未返回有效回复'
+    }
+
+    // 解析场景推荐数据 [SCENE_DATA]{...}[/SCENE_DATA]
+    // 包含对话框弹出逻辑
+    const sceneDataMatch = aiContent.match(/\[SCENE_DATA\]([\s\S]*?)\[\/SCENE_DATA\]/)
+    if (sceneDataMatch) {
+      try {
+        const rawJson = sceneDataMatch[1]
+        const parsedData = JSON.parse(rawJson)
+        sceneButtons.value = {
+          btn1: parsedData.btn1 || '',
+          btn2: parsedData.btn2 || '',
+          btn3: parsedData.btn3 || ''
+        }
+        sceneDialogVisible.value = true
+        // 清理显示内容中的原始标签
+        aiContent = aiContent.replace(/\[SCENE_DATA\][\s\S]*?\[\/SCENE_DATA\]/, '').trim()
+      } catch (e) {
+        console.error('解析 SCENE_DATA 失败:', e)
+      }
     }
     
     messages.value.push({ role: 'assistant', content: aiContent })
@@ -739,4 +815,28 @@ html.dark .chat-input {
     color: #ffffff;
   }
 */
+
+.scene-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.scene-btn {
+  width: 100%;
+  margin-left: 0 !important;
+  font-size: 16px;
+  padding: 20px 0;
+  border-radius: 8px;
+}
+
+.scene-dialog :deep(.el-dialog__header) {
+  margin-bottom: 0;
+}
+
+.scene-dialog :deep(.el-dialog__title) {
+  font-weight: bold;
+  color: var(--el-color-primary);
+}
 </style>
