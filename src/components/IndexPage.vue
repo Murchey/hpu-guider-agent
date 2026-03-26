@@ -154,6 +154,40 @@
               </el-drawer>
             </template>
         </el-card>
+
+        <el-card class="feature-card social-card" style="margin-top: 20px;">
+          <template #header>
+            <div class="card-header">
+              <h2>社交平台发布</h2>
+            </div>
+          </template>
+          <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将您的 AI 行程方案一键转化为精美的社交平台帖子（如小红书、朋友圈等样式），快速分享您的旅行灵感。</p>
+          <template #footer>
+            <el-button type="success" round @click="handleSocialPublish">前往生成</el-button>
+            <el-drawer 
+              v-model="socialDrawerVisible" 
+              title="选择发布的平台" 
+              size="500px"
+              class="info-drawer"
+              direction="rtl"
+              append-to-body
+            >
+              <el-form :model="socialForm" class="profile-form">
+                <el-form-item label="发布平台" :label-width="formLabelWidth">
+                  <el-checkbox-group v-model="socialForm.platforms" size="large" class="social-checkbox-group">
+                    <el-checkbox v-for="option in socialPlatformOptions" :key="option" :label="option" :value="option" border class="social-checkbox-item" />
+                  </el-checkbox-group>
+                </el-form-item>
+              </el-form>
+              <template #footer>
+                <div class="drawer-footer">
+                  <el-button @click="cancelBtn" size="large">取消</el-button>
+                  <el-button type="success" size="large" :disabled="socialForm.platforms.length === 0" @click="handleSocialConfirm">生成帖子</el-button>
+                </div>
+              </template>
+            </el-drawer>
+          </template>
+        </el-card>
       </div>
       <br>
       <h2 class="pageGuideArrow">更多 ↓ 内容</h2>
@@ -195,6 +229,7 @@ const emit = defineEmits<{
 }>()
 
 const dialogFormVisible = ref(false)
+const socialDrawerVisible = ref(false)
 const form = reactive({
     travelNumber: '',
     travelDays: '',
@@ -204,6 +239,14 @@ const form = reactive({
     customHabit: [],
     additionalRequirements: ''
 })
+
+const socialForm = reactive({
+  platforms: []
+})
+
+const socialPlatformOptions = [
+  '小红书', '微信朋友圈 / QQ空间', '微博超话', '抖音短视频文案', '知乎深度游记', 'B站Vlog内容'
+]
 
 // 判断是否需要输入特别需求
 const isNeedAdditionInput = computed(() => {
@@ -254,6 +297,30 @@ let parallaxScrollEl: HTMLElement | null = null
 const secondPanelRef = ref<HTMLElement | null>(null)
 let secondPanelObserver: IntersectionObserver | null = null
 
+const handleSocialPublish = () => {
+  socialDrawerVisible.value = true
+}
+
+const handleSocialConfirm = () => {
+  if (socialForm.platforms.length === 0) return
+
+  // 构造发送给 AI 的指令内容
+  // 您可以在这里修改发送给 AI 的具体话术
+  const platformsText = socialForm.platforms.join('、')
+  const socialPrompt = `model:社交内容\n我希望将之前的旅游行程方案转化为适合在 ${platformsText} 上发布的帖子内容。请根据我的旅行偏好和方案，为我生成吸引人的标题、正文（包含 Emoji）和相关的标签（Hashtags）。`
+
+  // 将指令存入 localStorage，供 AI 对话页面读取
+  localStorage.setItem('social-post-request', socialPrompt)
+
+  socialDrawerVisible.value = false
+  emit('navigate', 'aiDialogue')
+  
+  ElNotification({
+    title: '正在准备生成',
+    message: '已跳转至 AI 对话页面，请稍后...',
+    type: 'success',
+  })
+}
 
 const handleParallaxScroll = () => {
   if (!parallaxScrollEl) return
@@ -294,6 +361,7 @@ const handleConfirm = () =>{
 
 const cancelBtn = () => {
   dialogFormVisible.value = false;
+  socialDrawerVisible.value = false;
     ElNotification({
     title: '您的表单已保存',
     message: '如果有需要，你可以修改后再次提交。',
@@ -599,6 +667,25 @@ html.dark .card-header h2 {
 
 .drawer-footer :deep(.el-button) {
   font-size: 18px;
+}
+
+.social-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.social-checkbox-item {
+  width: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  height: auto !important;
+  padding: 12px 20px !important;
+}
+
+.social-checkbox-item :deep(.el-checkbox__label) {
+  font-size: 16px;
 }
 
 .profile-form :deep(.el-form-item) {

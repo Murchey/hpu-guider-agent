@@ -2,7 +2,7 @@
   <div class="setting-page">
     <el-card class="settings-card">
       <template #header>
-        <div class="card-header">API 手动配置</div>
+        <div class="card-header">API 配置</div>
       </template>
       <p class="tips">
         当前API配置为：{{ MANUAL_API_SETTINGS.provider }}

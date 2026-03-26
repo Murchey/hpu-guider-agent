@@ -82,10 +82,9 @@
       </div>
     </div>
 
-    <!-- 场景推荐选择对话框 -->
     <el-dialog
       v-model="sceneDialogVisible"
-      title="请选择您感兴趣的方案"
+      title="请选择下列选项"
       width="500px"
       center
       append-to-body
@@ -121,6 +120,33 @@
         </el-button>
       </div>
     </el-dialog>
+
+    <!-- 多选推荐对话框 -->
+    <el-dialog
+      v-model="selectDialogVisible"
+      title="请从以下选项中选择"
+      width="500px"
+      center
+      append-to-body
+      class="select-dialog"
+    >
+      <div class="select-options-container">
+        <el-checkbox-group v-model="selectedValues" class="select-checkbox-group">
+          <el-checkbox 
+            v-for="option in selectOptions" 
+            :key="option" 
+            :label="option" 
+            class="select-checkbox-item"
+          >
+            {{ option }}
+          </el-checkbox>
+        </el-checkbox-group>
+        <div class="select-dialog-footer">
+          <el-button @click="selectDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSelectConfirm" :disabled="selectedValues.length === 0">确认选择</el-button>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -152,6 +178,11 @@ const sceneButtons = ref({
   btn2: '',
   btn3: ''
 })
+
+// 多选弹窗状态
+const selectDialogVisible = ref(false)
+const selectOptions = ref<string[]>([])
+const selectedValues = ref<string[]>([])
 
 const modeValue = ref('互动问答')
 
@@ -261,8 +292,25 @@ const handleNewLine = () => {
 const handleSceneButtonClick = (btnIndex: number, btnText: string) => {
   console.log(`点击了场景按钮 ${btnIndex}: ${btnText}`)
   sceneDialogVisible.value = false
-  // 这里补充发送给 AI 的逻辑
-  sendMessage(btnText, false);
+  
+  // 隐藏发送用户的选择，格式为 JSON 字符串
+  const hiddenPrompt = `[USER_CHOICE]{"type": "scene_select", "value": "${btnText}"}[/USER_CHOICE]\n用户已选择方案：“${btnText}”，请根据该方案和之前的画像生成详细行程。`
+  handleSendHidden(hiddenPrompt).catch(err => {
+    ElMessage.error('发送选择失败: ' + err.message)
+  })
+}
+
+// 多选弹窗确认处理函数 (占位)
+const handleSelectConfirm = () => {
+  console.log('用户选择了:', selectedValues.value)
+  const selections = [...selectedValues.value]
+  selectDialogVisible.value = false
+  
+  // 隐藏发送用户的选择，格式为 JSON 数组
+  const hiddenPrompt = `[USER_CHOICE]{"type": "multi_select", "values": ${JSON.stringify(selections)}}[/USER_CHOICE]\n用户已选择以下景点/选项：${selections.join('、')}。请根据这些选择和之前的画像生成详细行程。`
+  handleSendHidden(hiddenPrompt).catch(err => {
+    ElMessage.error('发送选择失败: ' + err.message)
+  })
 }
 
 const clearChat = () => {
@@ -432,6 +480,24 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         console.error('解析 SCENE_DATA 失败:', e)
       }
     }
+
+    // 解析多选推荐数据 [SELECT_DATA]{"options": ["A", "B"]}[/SELECT_DATA]
+    const selectDataMatch = aiContent.match(/\[SELECT_DATA\]([\s\S]*?)\[\/SELECT_DATA\]/)
+    if (selectDataMatch) {
+      try {
+        const rawJson = selectDataMatch[1]
+        const parsedData = JSON.parse(rawJson)
+        if (Array.isArray(parsedData.options)) {
+          selectOptions.value = parsedData.options
+          selectedValues.value = [] // 重置选择
+          selectDialogVisible.value = true
+          // 清理显示内容中的原始标签
+          aiContent = aiContent.replace(/\[SELECT_DATA\][\s\S]*?\[\/SELECT_DATA\]/, '').trim()
+        }
+      } catch (e) {
+        console.error('解析 SELECT_DATA 失败:', e)
+      }
+    }
     
     messages.value.push({ role: 'assistant', content: aiContent })
   } catch (error: any) {
@@ -474,14 +540,39 @@ onMounted(async () => {
   await nextTick()
   await new Promise(resolve => setTimeout(resolve, 300))
   checkAndSendUserProfile()
+  checkAndSendSocialRequest()
 })
 
 watch(() => props.activeTab, (newTab) => {
   if (newTab === 'aiDialogue') {
     loadSettings() // 切换到 AI 页面时重新加载配置
     checkAndSendUserProfile()
+    checkAndSendSocialRequest()
   }
 })
+
+const checkAndSendSocialRequest = () => {
+  const socialPrompt = localStorage.getItem('social-post-request')
+  if (socialPrompt) {
+    sendSocialRequestWithRetry(socialPrompt)
+  }
+}
+
+const sendSocialRequestWithRetry = async (prompt: string) => {
+  const maxRetries = 5
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000 + i * 800))
+      await handleSendHidden(prompt)
+      localStorage.removeItem('social-post-request')
+      console.log('社交发布请求发送成功')
+      return true
+    } catch (error) {
+      console.error(`发送社交发布请求失败，第 ${i + 1} 次尝试:`, error)
+    }
+  }
+  return false
+}
 
 const checkAndSendUserProfile = () => {
   const savedForm = localStorage.getItem('user-profile-form')
@@ -489,7 +580,8 @@ const checkAndSendUserProfile = () => {
     try {
       const formData = JSON.parse(savedForm)
       
-      const prompt = `请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：\n
+      const prompt = `model:用户画像\n
+                      请根据以下用户画像信息，生成一个详细的用户画像总结，后续对话时用于推荐旅游景点：\n
                       1. 旅行人数（travelNumber）: ${formData.travelNumber || '未填写'} 人\n
                       2. 旅行天数（travelDays）: ${formData.travelDays || '未填写'} 天\n
                       3. 旅行预算（travelBudget）: ${formData.travelBudget || '未填写'} 元\n
@@ -836,6 +928,55 @@ html.dark .chat-input {
 }
 
 .scene-dialog :deep(.el-dialog__title) {
+  font-weight: bold;
+  color: var(--el-color-primary);
+}
+
+.select-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* 优化多选列表滚动条样式 */
+.select-options-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.select-options-container::-webkit-scrollbar-thumb {
+  background-color: var(--el-border-color-darker);
+  border-radius: 3px;
+}
+
+.select-options-container::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.select-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.select-checkbox-item {
+  width: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  height: auto !important;
+  padding: 12px 20px !important;
+}
+
+.select-dialog-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.select-dialog :deep(.el-dialog__title) {
   font-weight: bold;
   color: var(--el-color-primary);
 }
