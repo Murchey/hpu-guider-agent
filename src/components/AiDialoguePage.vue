@@ -172,7 +172,7 @@ const loadSettings = () => {
 }
 
 const md = new MarkdownIt({
-  html: false,
+  html: true,
   linkify: true,
   breaks: true
 })
@@ -510,8 +510,15 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
 
 .message-text {
   line-height: 1.6;
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.message-text :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+  display: block;
 }
 
 
