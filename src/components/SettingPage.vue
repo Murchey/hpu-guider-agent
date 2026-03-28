@@ -45,9 +45,9 @@ const MANUAL_API_SETTINGS = {
   // 注意：后面不要加 /v3/chat，代码会自动拼接
   baseURL: 'https://api.coze.cn',
   // apiKey 填写你的 Personal Access Token
-  apiKey: 'pat_oHBIFlgTQsZJF3sOhpDjMjCzD02vo2v7ccPlOusFpqLXdLyx2KmKMByKTRXLnq1I',
+  apiKey: 'pat_dwOqipNExoqRFtk4RkKhyj3IkxvaMPU2ozUrle8yvhleoJe6OCIEXWVvfbCH4GlA',
   // botId 填写你的 Bot ID
-  botId: '7619989140863778868',
+  botId: '7622230218706731042',
   // model 可选 (Coze 模式下该项通常不生效，由 Bot ID 决定)
   model: ''
 }
