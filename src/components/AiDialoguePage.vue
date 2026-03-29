@@ -294,7 +294,7 @@ const handleSceneButtonClick = (btnIndex: number, btnText: string) => {
   sceneDialogVisible.value = false
   
   // 隐藏发送用户的选择，格式为 JSON 字符串
-  const hiddenPrompt = `[USER_CHOICE]{"type": "scene_select", "value": "${btnText}"}[/USER_CHOICE]\n用户已选择方案：“${btnText}”，请根据该方案和之前的画像生成详细行程。`
+  const hiddenPrompt = `model:景点推荐\n[USER_CHOICE]{"value": "${btnText}"}[/USER_CHOICE]\n`
   handleSendHidden(hiddenPrompt).catch(err => {
     ElMessage.error('发送选择失败: ' + err.message)
   })
@@ -307,7 +307,7 @@ const handleSelectConfirm = () => {
   selectDialogVisible.value = false
   
   // 隐藏发送用户的选择，格式为 JSON 数组
-  const hiddenPrompt = `[USER_CHOICE]{"type": "multi_select", "values": ${JSON.stringify(selections)}}[/USER_CHOICE]\n用户已选择以下景点/选项：${selections.join('、')}。请根据这些选择和之前的画像生成详细行程。`
+  const hiddenPrompt = `model:确定游览方案\n[USER_CHOICE]{"values": ${JSON.stringify(selections)}}[/USER_CHOICE]`
   handleSendHidden(hiddenPrompt).catch(err => {
     ElMessage.error('发送选择失败: ' + err.message)
   })
