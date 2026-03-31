@@ -40,18 +40,17 @@ const isDarkMode = ref(false)
 
 const MANUAL_API_SETTINGS = {
   // provider 可选：openai / siliconflow / zhipu / qwen / coze / custom
-  provider: 'siliconflow',
+  provider: 'coze',
   // Coze 根地址 (国内版: https://api.coze.cn | 国际版: https://api.coze.com)
   // 注意：后面不要加 /v3/chat，代码会自动拼接
-  // baseURL: 'https://api.coze.cn',
-  baseURL: 'https://api.siliconflow.cn/v1',
+  baseURL: 'https://api.coze.cn',
+  // baseURL: 'https://api.siliconflow.cn/v1',
   // apiKey 填写你的 Personal Access Token
-  // apiKey: 'pat_dwOqipNExoqRFtk4RkKhyj3IkxvaMPU2ozUrle8yvhleoJe6OCIEXWVvfbCH4GlA',
-  apiKey: 'sk-neyqpwalelitfxlnhbqixqquynpdgqbinneegbblhijjjflh',
+  apiKey: 'pat_dwOqipNExoqRFtk4RkKhyj3IkxvaMPU2ozUrle8yvhleoJe6OCIEXWVvfbCH4GlA',
   // botId 填写你的 Bot ID
-  // botId: '7622230218706731042',
+  botId: '7622230218706731042',
   // model 可选 (Coze 模式下该项通常不生效，由 Bot ID 决定)
-  model: 'Pro/Qwen/Qwen2.5-7B-Instruct'
+  model: ''
 }
 
 const applyManualApiSettings = () => {
