@@ -600,6 +600,9 @@ const checkAndSendUserProfile = () => {
                       4. 出行风格（travelStyle）: ${formData.travelStyle || '未填写'}\n
                       5. 行程核心关注点（travelFocus）: ${Array.isArray(formData.travelFocus) ? formData.travelFocus.join('、') : (formData.travelFocus || '未填写')}\n
                       6. 个性化出行习惯（customHabit）: ${(Array.isArray(formData.customHabit) ? formData.customHabit.join('、') : (formData.customHabit || '未填写')) + '。' + formData.additionalRequirements}\n
+                      7. 出发日期（startDate）: ${formData.startDate || '未填写'}\n
+                      8. 出行方式（travelMethod）: ${formData.travelMethod || '未填写'}\n
+                      9. 出发地（originPlace）: ${formData.originPlace || '未填写'}\n
                       请调用你的工作流进行用户喜好分析，下面的对话内容要基于此进行。明白回复我：我已读取用户画像，下面根据你的喜好进行对话咨询。`
       
       sendUserProfileWithRetry(prompt, formData)

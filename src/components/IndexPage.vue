@@ -42,6 +42,30 @@
                     <el-input v-model="form.travelBudget" style="width: 100%" placeholder="输入您期望的预算(元)" />
                   </el-form-item>
                   <br>
+                  <el-form-item label="出发日期" :label-width="formLabelWidth">
+                    <el-date-picker
+                      v-model="form.startDate"
+                      type="date"
+                      aria-label="选择日期"
+                      placeholder="请选择出发日期"
+                      style="width: 100%"
+                      value-format="YYYY-MM-DD"
+                    />
+                  </el-form-item>
+                  <br>
+                  <el-form-item label="出发地点" :label-width="formLabelWidth">
+                    <el-input v-model="form.originPlace" style="width: 100%" placeholder="输入您期望的出发地点" />
+                  </el-form-item>
+                  <br>
+                  <el-form-item label="交通方式" :label-width="formLabelWidth">
+                    <el-radio-group v-model="form.travelMethod" size="large" fill="#409eff">
+                    <el-radio-button label="驾车" value="驾车" />
+                    <el-radio-button label="骑行" value="骑行" />
+                    <el-radio-button label="公共交通" value="公共交通" />
+                    <el-radio-button label="步行" value="步行" />
+                    </el-radio-group>
+                  </el-form-item>
+                  <br>
                   <el-form-item label="出行风格" :label-width="formLabelWidth">
                     <el-radio-group v-model="form.travelStyle" size="large" fill="#409eff">
                       
@@ -237,7 +261,10 @@ const form = reactive({
     travelStyle: '',
     travelFocus: [],
     customHabit: [],
-    additionalRequirements: ''
+    additionalRequirements: '',
+    travelMethod: '',
+    startDate: '',
+    originPlace: ''
 })
 
 const socialForm = reactive({
@@ -288,7 +315,8 @@ const formLabelWidth = '140px'
 //表单验证函数：确保每个选项问题都有值
 const isFormValid = computed(() => {
   return form.travelNumber && form.travelDays && form.travelBudget && form.travelStyle && 
-         form.travelFocus.length > 0 && form.customHabit.length > 0;
+         form.travelFocus.length > 0 && form.customHabit.length > 0 &&
+         form.startDate && form.travelMethod && form.originPlace;
 });
 
 const parallaxScroll = ref(0)
