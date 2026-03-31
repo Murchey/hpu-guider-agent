@@ -81,15 +81,19 @@
         </div>
       </div>
     </div>
-
+    <!-- 单选卡 -->
     <el-dialog
       v-model="sceneDialogVisible"
       title="请选择下列选项"
-      width="500px"
+      width="900px"
       center
       append-to-body
       class="scene-dialog"
+      draggable
     >
+      <el-card v-if="sceneButtons.description" class="dialog-desc-card">
+        <div class="dialog-desc-text">{{ sceneButtons.description }}</div>
+      </el-card>
       <div class="scene-buttons-container">
         <el-button 
           v-if="sceneButtons.btn1" 
@@ -125,11 +129,15 @@
     <el-dialog
       v-model="selectDialogVisible"
       title="请从以下选项中选择"
-      width="500px"
+      width="900px"
       center
       append-to-body
       class="select-dialog"
+      draggable
     >
+      <el-card v-if="selectDescription" class="dialog-desc-card">
+        <div class="dialog-desc-text">{{ selectDescription }}</div>
+      </el-card>
       <div class="select-options-container">
         <el-checkbox-group v-model="selectedValues" class="select-checkbox-group">
           <el-checkbox 
@@ -174,6 +182,7 @@ const messagesRef = ref<HTMLElement | null>(null)
 // 场景推荐对话框状态
 const sceneDialogVisible = ref(false)
 const sceneButtons = ref({
+  description: '',
   btn1: '',
   btn2: '',
   btn3: ''
@@ -182,6 +191,7 @@ const sceneButtons = ref({
 // 多选弹窗状态
 const selectDialogVisible = ref(false)
 const selectOptions = ref<string[]>([])
+const selectDescription = ref('')
 const selectedValues = ref<string[]>([])
 
 const modeValue = ref('互动问答')
@@ -469,6 +479,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         const rawJson = sceneDataMatch[1]
         const parsedData = JSON.parse(rawJson)
         sceneButtons.value = {
+          description: parsedData.description || '',
           btn1: parsedData.btn1 || '',
           btn2: parsedData.btn2 || '',
           btn3: parsedData.btn3 || ''
@@ -489,6 +500,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         const parsedData = JSON.parse(rawJson)
         if (Array.isArray(parsedData.options)) {
           selectOptions.value = parsedData.options
+          selectDescription.value = parsedData.description || ''
           selectedValues.value = [] // 重置选择
           selectDialogVisible.value = true
           // 清理显示内容中的原始标签
@@ -930,6 +942,19 @@ html.dark .chat-input {
 .scene-dialog :deep(.el-dialog__title) {
   font-weight: bold;
   color: var(--el-color-primary);
+}
+
+.dialog-desc-card {
+  margin-bottom: 20px;
+  background-color: var(--el-fill-color-light);
+  border: none;
+}
+
+.dialog-desc-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--el-text-color-primary);
+  white-space: pre-wrap;
 }
 
 .select-options-container {
