@@ -272,7 +272,7 @@ const socialForm = reactive({
 })
 
 const socialPlatformOptions = [
-  '小红书', '微信朋友圈 / QQ空间', '微博超话', '抖音短视频文案', '知乎深度游记', 'B站Vlog内容'
+  '小红书', '微信朋友圈 / QQ空间', '微博超话', '抖音短视频文案'
 ]
 
 // 判断是否需要输入特别需求
