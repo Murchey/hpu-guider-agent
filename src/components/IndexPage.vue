@@ -1,8 +1,39 @@
 <template>
   <div class="index-page" :style="parallaxStyle">
+    <!-- 顶层透明传感器，用于捕获鼠标移动，位置与背景图同步 -->
+    <div 
+      class="shatter-sensor"
+      @mousemove="handleShatterMouseMove"
+      @mouseleave="handleShatterMouseLeave"
+    >
+      <img :src="titleBackImg" style="width: 100%; height: auto; opacity: 0; display: block;" />
+    </div>
+
     <div class="parallax-container" aria-hidden="true">
       <div class="parallax-layer parallax-back parallax-back-1"></div>
-      <div class="parallax-layer parallax-mid parallax-title-back"></div>
+      
+      <!-- 飞散效果背景图层 (位于 FRONT_IMG 之下) -->
+      <div 
+        class="shatter-wrapper"
+        ref="shatterWrapperRef"
+      >
+        <img :src="titleBackImg" class="shatter-source" aria-hidden="true" />
+        <div class="fragment-grid">
+          <div 
+            v-for="i in rows" 
+            :key="'row-' + i" 
+            class="shatter-row"
+          >
+            <div 
+                 v-for="j in cols" 
+                 :key="'col-' + j"
+                 class="fragment"
+                 :style="getFragmentStyle(i - 1, j - 1)"
+               ></div>
+          </div>
+        </div>
+      </div>
+
       <div class="parallax-layer parallax-front parallax-front-1"></div>
       <div class="parallax-overlay"></div>
     </div>
@@ -309,6 +340,95 @@ const isFormValid = computed(() => {
 const parallaxScroll = ref(0)
 let parallaxScrollEl: HTMLElement | null = null
 
+// --- 碎裂飞散效果相关 ---
+const shatterWrapperRef = ref<HTMLElement | null>(null)
+const mousePos = reactive({ x: -1000, y: -1000 })
+const rows = 12
+const cols = 20
+
+// 预生成随机偏移量和旋转角度，保证每次飞散效果一致
+const fragmentData = Array.from({ length: rows * cols }, () => {
+  const getRandomDisplacement = () => {
+    const sign = Math.random() < 0.5 ? -1 : 1
+    return (Math.random() * (120 - 75) + 75) * sign
+  }
+  return {
+    x: getRandomDisplacement(),
+    y: getRandomDisplacement(),
+    z: Math.random() * 50,
+    rotateX: (Math.random() - 0.5) * 180,
+    rotateY: (Math.random() - 0.5) * 180,
+    rotateZ: (Math.random() - 0.5) * 180,
+    scale: Math.random() * 0.2 + 0.9,
+    delay: Math.random() * 0.05
+  }
+})
+
+const handleShatterMouseMove = (e: MouseEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  mousePos.x = e.clientX - rect.left
+  mousePos.y = e.clientY - rect.top
+}
+
+const handleShatterMouseLeave = () => {
+  mousePos.x = -1000
+  mousePos.y = -1000
+}
+
+const getFragmentStyle = (row: number, col: number) => {
+  const index = row * cols + col
+  const data = fragmentData[index]
+  
+  const bgX = (col / (cols - 1)) * 100
+  const bgY = (row / (rows - 1)) * 100
+  
+  const style: any = {
+    width: `${100 / cols}%`,
+    height: '100%',
+    backgroundImage: `url(${titleBackImg})`,
+    backgroundSize: `${cols * 100}% ${rows * 100}%`,
+    backgroundPosition: `${bgX}% ${bgY}%`,
+    transition: `all 0.15s cubic-bezier(0.2, 0, 0.2, 1)`,
+    willChange: 'transform, opacity'
+  }
+
+  // 局部飞散逻辑
+  const fragCenterXPercent = (col + 0.5) / cols * 100
+  const fragCenterYPercent = (row + 0.5) / rows * 100
+  
+  let isNear = false
+  if (shatterWrapperRef.value && mousePos.x !== -1000) {
+    const w = shatterWrapperRef.value.clientWidth
+    const h = shatterWrapperRef.value.clientHeight
+    const mXPercent = (mousePos.x / w) * 100
+    const mYPercent = (mousePos.y / h) * 100
+    
+    const dx = (fragCenterXPercent - mXPercent) * w / 100
+    const dy = (fragCenterYPercent - mYPercent) * h / 100
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    
+    // 局部飞散感应范围
+    if (dist < 75) { 
+      isNear = true
+    }
+  }
+
+  if (isNear) {
+    style.transform = `translate3d(${data.x}px, ${data.y}px, ${data.z}px) rotateX(${data.rotateX}deg) rotateY(${data.rotateY}deg) rotateZ(${data.rotateZ}deg) scale(${data.scale})`
+    style.opacity = '0.7' // 保持一定可见度，展示位移效果
+    style.zIndex = '10'
+  } else {
+    // 恢复时略微增加 transition 时长让过程更优雅
+    style.transform = 'translate3d(0, 0, 0) rotateX(0) rotateY(0) rotateZ(0) scale(1)'
+    style.opacity = '1'
+    style.zIndex = '1'
+    style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+  }
+
+  return style
+}
+// ------------------------
+
 const handleSocialPublish = () => {
   socialDrawerVisible.value = true
 }
@@ -501,15 +621,67 @@ html.dark .pageGuideArrow{
   background-image: var(--parallax-back-1);
   opacity: calc(1 - var(--parallax-p2));
   transform: translate3d(0, calc(var(--parallax-scroll) * -0.06), 0);
+  z-index: 1;
 }
 
 .parallax-title-back {
-  background-image: var(--parallax-title-back);
-  background-size: contain;
-  background-position: center 15%;
+  /* background-image: var(--parallax-title-back); */
   transform: translate3d(0, calc(var(--parallax-scroll) * -0.10), 0);
   opacity: 0.7;
+  pointer-events: none; /* 顶层依然 none */
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* 改为 flex-start 配合 margin-top 使其靠上 */
+  perspective: 1000px;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+}
+
+.shatter-wrapper {
+  width: 100%; /* 撑满宽度 */
+  max-width: none; /* 移除限制 */
+  position: relative;
+  /* 向下偏移一点，避开顶部导航栏，作为 WELCOME 标题的背景 */
+  margin-top: 2%; 
+  pointer-events: auto; /* 核心：开启此处的鼠标事件 */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.shatter-source {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0;
   pointer-events: none;
+}
+
+.fragment-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none; /* 碎片不接收事件 */
+}
+
+.shatter-row {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  pointer-events: none;
+}
+
+.fragment {
+  pointer-events: none;
+  background-repeat: no-repeat;
+  /* background-size 和 background-position 由 getFragmentStyle 动态设置 */
 }
 
 .parallax-front-1 {
@@ -517,6 +689,8 @@ html.dark .pageGuideArrow{
   background-size: contain;
   opacity: calc(1 - var(--parallax-p2));
   transform: translate3d(0, calc(var(--parallax-scroll) * -0.14), 0);
+  z-index: 10; /* 位于飞散背景之上 */
+  pointer-events: none; /* 让鼠标穿透到下方的飞散层 */
 }
 
 .parallax-back-2 {
@@ -541,6 +715,8 @@ html.dark .pageGuideArrow{
     rgba(255, 255, 255, 0.55) 35%,
     rgba(255, 255, 255, 0.35) 100%
   );
+  z-index: 15;
+  pointer-events: none; /* 让鼠标穿透 */
 }
 
 html.dark .parallax-overlay {
@@ -561,22 +737,88 @@ html.dark .parallax-overlay {
   z-index: 1;
 }
 
+.shatter-wrapper {
+  position: absolute;
+  top: 80px; /* 从导航栏下方开始显示 */
+  left: 0;
+  width: 100%;
+  transform: translate3d(0, calc(var(--parallax-scroll) * -0.10), 0);
+  z-index: 5; /* 位于 BACK_IMG 之后，FRONT_IMG 之下 */
+  pointer-events: none; /* 修改为 none，由顶层 sensor 捕获事件 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  overflow: visible;
+}
+
+.shatter-sensor {
+  position: fixed; /* 使用 fixed 与 parallax-container 同步 */
+  top: 80px;
+  left: 0;
+  width: 100%;
+  /* 必须使用同样的 transform 以保证位置同步 */
+  transform: translate3d(0, calc(var(--parallax-scroll) * -0.10), 0);
+  z-index: 100; /* 位于所有图层最上方 */
+  pointer-events: auto;
+  cursor: crosshair;
+  background: transparent;
+}
+
+
+.shatter-source {
+  width: 100%;
+  height: auto;
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fragment-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.shatter-row {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  pointer-events: none;
+}
+
+.fragment {
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
 .welcome-title {
+  position: relative;
+  z-index: 2; /* 确保文字在背景之上 */
   font-size: 52px;
-  /* 欢迎标题颜色 */
   color: #3b94ec;
   margin-bottom: 20px;
   font-weight: bold;
+  pointer-events: none;
 }
 
 .welcome-subtitle {
+  position: relative;
+  z-index: 2;
   font-size: 24px;
-  /* 欢迎副标题颜色 */
   color: #3b94ec;
   margin-bottom: 20px;
+  pointer-events: none;
 }
 
 .action-buttons {
+  position: relative;
+  z-index: 3;
   display: flex;
   justify-content: center;
   gap: 40px;
@@ -607,6 +849,8 @@ html.dark .parallax-overlay {
 }
 
 .carousel-section {
+  position: relative;
+  z-index: 3; /* 确保走马灯可点击且不被飞散效果覆盖 */
   width: 100%;
   max-width: 1800px;
   margin: 0 auto 30px auto;
