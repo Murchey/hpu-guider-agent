@@ -2,230 +2,218 @@
   <div class="index-page" :style="parallaxStyle">
     <div class="parallax-container" aria-hidden="true">
       <div class="parallax-layer parallax-back parallax-back-1"></div>
+      <div class="parallax-layer parallax-mid parallax-title-back"></div>
       <div class="parallax-layer parallax-front parallax-front-1"></div>
-      <div class="parallax-layer parallax-back parallax-back-2"></div>
-      <div class="parallax-layer parallax-front parallax-front-2"></div>
       <div class="parallax-overlay"></div>
     </div>
     <section class="panel panel-1">
       <div class="welcome-container">
         <h1 class="welcome-title">WELCOME</h1>
-        <p class="welcome-subtitle">文途智行</p>
+        <p class="welcome-subtitle">您的智慧导游助手</p>
         <p class="welcome-subtitle">为您智能推荐导游路线和旅游项目</p>
-        <el-card class="feature-card">
-          <template #header>
-            <div class="card-header">
-            <h2>生成自己的用户画像</h2>
-            </div>
-          </template>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;根据自己的使用需求和爱好，使用AI生成，制作专属于自己的用户画像，让AI推荐更加精准。</p>
-            <template #footer>
-              <el-button type="primary" round @click="dialogFormVisible = true">前往生成</el-button>
-              <el-drawer 
-                v-model="dialogFormVisible" 
-                title="请完成下面的问卷调查" 
-                size="900px"
-                class="info-drawer"
-                direction="rtl"
-                append-to-body
-              >
-                <el-form :model="form" class="profile-form">
-                  <el-form-item label="旅行人数" :label-width="formLabelWidth">
-                    <el-input v-model="form.travelNumber" style="width: 100%" placeholder="输入旅行人数(个)" />
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="旅行天数" :label-width="formLabelWidth">
-                    <el-input v-model="form.travelDays" style="width: 100%" placeholder="输入旅行消耗时间(天)" />
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="旅行预算" :label-width="formLabelWidth">
-                    <el-input v-model="form.travelBudget" style="width: 100%" placeholder="输入您期望的预算(元)" />
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出发日期" :label-width="formLabelWidth">
-                    <el-date-picker
-                      v-model="form.startDate"
-                      type="date"
-                      aria-label="选择日期"
-                      placeholder="请选择出发日期"
-                      style="width: 100%"
-                      value-format="YYYY-MM-DD"
-                    />
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出发地点" :label-width="formLabelWidth">
-                    <el-input v-model="form.originPlace" style="width: 100%" placeholder="输入您期望的出发地点" />
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="交通方式" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.travelMethod" size="large" fill="#409eff">
-                    <el-radio-button label="驾车" value="驾车" />
-                    <el-radio-button label="骑行" value="骑行" />
-                    <el-radio-button label="公共交通" value="公共交通" />
-                    <el-radio-button label="步行" value="步行" />
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="出行风格" :label-width="formLabelWidth">
-                    <el-radio-group v-model="form.travelStyle" size="large" fill="#409eff">
-                      
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">核心诉求为身心放松，主打无计划慢节奏，不赶景点、不强制打卡，<br/>
-                          以酒店 / 民宿休憩、本地随性闲逛为核心，全程拒绝高强度奔波</div></template>
-                      <el-radio-button label="松弛度假" value="松弛度假" />
-                      </el-tooltip>
+        <!-- 精选景点走马灯 -->
+        <div class="carousel-section">
+          <el-carousel :interval="4000" height="425px" class="custom-carousel" type="card">
+            <el-carousel-item v-for="(img, index) in recommendPlaces" :key="index">
+              <div class="carousel-item-content">
+                <img :src="img" :alt="'place' + (index + 1)" class="carousel-image" />
+              </div>
+            </el-carousel-item>
+          </el-carousel>
+        </div>
 
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">追求单位时间内游览效率最大化，行程紧凑、目标明确，<br/>
-                          通过科学规划覆盖尽可能多的核心景点与打卡位</div></template>
-                      <el-radio-button label="高效打卡" value="高效打卡" />
-                      </el-tooltip>
 
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">侧重历史脉络、建筑美学、艺术展览或非遗民俗，<br/>
-                          愿意在单一地点停留较长时间进行深度学习与感悟</div></template>
-                      <el-radio-button label="人文深度" value="人文深度" />
-                      </el-tooltip>
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+          <el-button type="primary" size="large" round @click="dialogFormVisible = true" class="big-action-btn">
+            生成用户画像
+          </el-button>
+          <el-button type="success" size="large" round @click="handleSocialPublish" class="big-action-btn">
+            社交平台发布
+          </el-button>
+        </div>
 
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">亲近自然地理，包含徒步、登山、观鸟、露营等轻量或专业户外活动，<br/>
-                          对自然风光、生态环境有极高向往</div></template>
-                      <el-radio-button label="自然户外" value="自然户外" />
-                      </el-tooltip>
+        <!-- 用户画像问卷抽屉 -->
+        <el-drawer 
+          v-model="dialogFormVisible" 
+          title="请完成下面的问卷调查" 
+          size="900px"
+          class="info-drawer"
+          direction="rtl"
+          append-to-body
+        >
+          <el-form :model="form" class="profile-form">
+            <el-form-item label="旅行人数" :label-width="formLabelWidth">
+              <el-input v-model="form.travelNumber" style="width: 100%" placeholder="输入旅行人数(个)" />
+            </el-form-item>
+            <br>
+            <el-form-item label="旅行天数" :label-width="formLabelWidth">
+              <el-input v-model="form.travelDays" style="width: 100%" placeholder="输入旅行消耗时间(天)" />
+            </el-form-item>
+            <br>
+            <el-form-item label="旅行预算" :label-width="formLabelWidth">
+              <el-input v-model="form.travelBudget" style="width: 100%" placeholder="输入您期望的预算(元)" />
+            </el-form-item>
+            <br>
+            <el-form-item label="出发日期" :label-width="formLabelWidth">
+              <el-date-picker
+                v-model="form.startDate"
+                type="date"
+                aria-label="选择日期"
+                placeholder="请选择出发日期"
+                style="width: 100%"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+            <br>
+            <el-form-item label="出发地点" :label-width="formLabelWidth">
+              <el-input v-model="form.originPlace" style="width: 100%" placeholder="输入您期望的出发地点" />
+            </el-form-item>
+            <br>
+            <el-form-item label="交通方式" :label-width="formLabelWidth">
+              <el-radio-group v-model="form.travelMethod" size="large" fill="#409eff">
+              <el-radio-button label="驾车" value="驾车" />
+              <el-radio-button label="骑行" value="骑行" />
+              <el-radio-button label="公共交通" value="公共交通" />
+              <el-radio-button label="步行" value="步行" />
+              </el-radio-group>
+            </el-form-item>
+            <br>
+            <el-form-item label="出行风格" :label-width="formLabelWidth">
+              <el-radio-group v-model="form.travelStyle" size="large" fill="#409eff">
+                
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">核心诉求为身心放松，主打无计划慢节奏，不赶景点、不强制打卡，<br/>
+                    以酒店 / 民宿休憩、本地随性闲逛为核心，全程拒绝高强度奔波</div></template>
+                <el-radio-button label="松弛度假" value="松弛度假" />
+                </el-tooltip>
 
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">以“吃”为行程核心驱动力，寻访地道老字号、街头小吃或特色餐厅，<br/>
-                          通过味觉深度体验城市烟火气</div></template>
-                      <el-radio-button label="美食寻味" value="美食寻味" />
-                      </el-tooltip>
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">追求单位时间内游览效率最大化，行程紧凑、目标明确，<br/>
+                    通过科学规划覆盖尽可能多的核心景点与打卡位</div></template>
+                <el-radio-button label="高效打卡" value="高效打卡" />
+                </el-tooltip>
 
-                      <el-tooltip 
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content><div style="font-size: 14px;">主打随机感，通过 CityWalk 方式探索城市街巷，<br/>
-                          挖掘被大众忽略的社区细节与城市肌理</div></template>
-                      <el-radio-button label="城市漫游" value="城市漫游" />
-                      </el-tooltip>
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">侧重历史脉络、建筑美学、艺术展览或非遗民俗，<br/>
+                    愿意在单一地点停留较长时间进行深度学习与感悟</div></template>
+                <el-radio-button label="人文深度" value="人文深度" />
+                </el-tooltip>
 
-                    </el-radio-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="行程核心关注点" :label-width="formLabelWidth">
-                    <el-checkbox-group v-model="form.travelFocus" size="large">
-                      <el-tooltip 
-                        v-for="(travelFocusOption, index) in travelFocusOptions" 
-                        :key="travelFocusOption"
-                        placement="top"
-                        transition="none"
-                        :show-after="0"
-                        :hide-after="0"
-                      >
-                        <template #content>
-                          <div style="font-size: 14px; max-width: 200px; line-height: 1.4;">
-                            {{ travelFocusTips[index] }}
-                          </div>
-                        </template>
-                        <el-checkbox-button :label="travelFocusOption" :value="travelFocusOption" />
-                      </el-tooltip>
-                    </el-checkbox-group>
-                  </el-form-item>
-                  <br>
-                  <el-form-item label="个性化出行习惯" :label-width="formLabelWidth">
-                    <el-checkbox-group v-model="form.customHabit" size="large">
-                      <el-checkbox-button v-for="travelCustomOption in travelCustomOptions" :key="travelCustomOption" :label="travelCustomOption" :value="travelCustomOption" :disabled="isCustomOptionsDisabled(travelCustomOption)"/>
-                    </el-checkbox-group>
-                  </el-form-item>
-                  <br>
-                   <el-form-item label="其他个性要求" :label-width="formLabelWidth" >
-                    <el-input v-model="form.additionalRequirements" style="width: 100%" placeholder="输入其他个性要求" :disabled="isNeedAdditionInput"/>
-                  </el-form-item>
-                  
-                </el-form>
-                <template #footer>
-                  <div class="drawer-footer">
-                    <el-button @click="cancelBtn" size="large">取消</el-button>
-                    <el-button type="primary" @click="handleConfirm" size="large" :disabled="!isFormValid">确定</el-button>
-                  </div>
-                </template>
-              </el-drawer>
-            </template>
-        </el-card>
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">亲近自然地理，包含徒步、登山、观鸟、露营等轻量或专业户外活动，<br/>
+                    对自然风光、生态环境有极高向往</div></template>
+                <el-radio-button label="自然户外" value="自然户外" />
+                </el-tooltip>
 
-        <el-card class="feature-card social-card" style="margin-top: 20px;">
-          <template #header>
-            <div class="card-header">
-              <h2>社交平台发布</h2>
-            </div>
-          </template>
-          <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;将您的 AI 行程方案一键转化为精美的社交平台帖子（如小红书、朋友圈等样式），快速分享您的旅行灵感。</p>
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">以“吃”为行程核心驱动力，寻访地道老字号、街头小吃或特色餐厅，<br/>
+                    通过味觉深度体验城市烟火气</div></template>
+                <el-radio-button label="美食寻味" value="美食寻味" />
+                </el-tooltip>
+
+                <el-tooltip 
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content><div style="font-size: 14px;">主打随机感，通过 CityWalk 方式探索城市街巷，<br/>
+                    挖掘被大众忽略的社区细节与城市肌理</div></template>
+                <el-radio-button label="城市漫游" value="城市漫游" />
+                </el-tooltip>
+
+              </el-radio-group>
+            </el-form-item>
+            <br>
+            <el-form-item label="行程核心关注点" :label-width="formLabelWidth">
+              <el-checkbox-group v-model="form.travelFocus" size="large">
+                <el-tooltip 
+                  v-for="(travelFocusOption, index) in travelFocusOptions" 
+                  :key="travelFocusOption"
+                  placement="top"
+                  transition="none"
+                  :show-after="0"
+                  :hide-after="0"
+                >
+                  <template #content>
+                    <div style="font-size: 14px; max-width: 200px; line-height: 1.4;">
+                      {{ travelFocusTips[index] }}
+                    </div>
+                  </template>
+                  <el-checkbox-button :label="travelFocusOption" :value="travelFocusOption" />
+                </el-tooltip>
+              </el-checkbox-group>
+            </el-form-item>
+            <br>
+            <el-form-item label="个性化出行习惯" :label-width="formLabelWidth">
+              <el-checkbox-group v-model="form.customHabit" size="large">
+                <el-checkbox-button v-for="travelCustomOption in travelCustomOptions" :key="travelCustomOption" :label="travelCustomOption" :value="travelCustomOption" :disabled="isCustomOptionsDisabled(travelCustomOption)"/>
+              </el-checkbox-group>
+            </el-form-item>
+            <br>
+             <el-form-item label="其他个性要求" :label-width="formLabelWidth" >
+              <el-input v-model="form.additionalRequirements" style="width: 100%" placeholder="输入其他个性要求" :disabled="isNeedAdditionInput"/>
+            </el-form-item>
+            
+          </el-form>
           <template #footer>
-            <el-button type="success" round @click="handleSocialPublish">前往生成</el-button>
-            <el-drawer 
-              v-model="socialDrawerVisible" 
-              title="选择发布的平台" 
-              size="500px"
-              class="info-drawer"
-              direction="rtl"
-              append-to-body
-            >
-              <el-form :model="socialForm" class="profile-form">
-                <el-form-item label="发布平台" :label-width="formLabelWidth">
-                  <el-checkbox-group v-model="socialForm.platforms" size="large" class="social-checkbox-group">
-                    <el-checkbox v-for="option in socialPlatformOptions" :key="option" :label="option" :value="option" border class="social-checkbox-item" />
-                  </el-checkbox-group>
-                </el-form-item>
-              </el-form>
-              <template #footer>
-                <div class="drawer-footer">
-                  <el-button @click="cancelBtn" size="large">取消</el-button>
-                  <el-button type="success" size="large" :disabled="socialForm.platforms.length === 0" @click="handleSocialConfirm">生成帖子</el-button>
-                </div>
-              </template>
-            </el-drawer>
+            <div class="drawer-footer">
+              <el-button @click="cancelBtn" size="large">取消</el-button>
+              <el-button type="primary" @click="handleConfirm" size="large" :disabled="!isFormValid">确定</el-button>
+            </div>
           </template>
-        </el-card>
-      </div>
-      <br>
-      <h2 class="pageGuideArrow">更多 ↓ 内容</h2>
-    </section>
+        </el-drawer>
 
-    <section ref="secondPanelRef" class="panel panel-2">
-      <h1 text="2xl" justify="center">精选景点</h1>
-      <el-carousel :interval="4000" height="470px" class="custom-carousel" type="card">
-        <el-carousel-item v-for="(img, index) in recommendPlaces" :key="index">
-          <div class="carousel-item-content">
-            <img :src="img" :alt="'place' + (index + 1)" class="carousel-image" />
-          </div>
-        </el-carousel-item>
-      </el-carousel>
+        <!-- 社交平台发布抽屉 -->
+        <el-drawer 
+          v-model="socialDrawerVisible" 
+          title="选择发布的平台" 
+          size="500px"
+          class="info-drawer"
+          direction="rtl"
+          append-to-body
+        >
+          <el-form :model="socialForm" class="profile-form">
+            <el-form-item label="发布平台" :label-width="formLabelWidth">
+              <el-checkbox-group v-model="socialForm.platforms" size="large" class="social-checkbox-group">
+                <el-checkbox v-for="option in socialPlatformOptions" :key="option" :label="option" :value="option" border class="social-checkbox-item" />
+              </el-checkbox-group>
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <div class="drawer-footer">
+              <el-button @click="cancelBtn" size="large">取消</el-button>
+              <el-button type="success" size="large" :disabled="socialForm.platforms.length === 0" @click="handleSocialConfirm">生成帖子</el-button>
+            </div>
+          </template>
+        </el-drawer>
+      </div>
     </section>
   </div>
 </template>
@@ -235,8 +223,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { ElNotification } from 'element-plus'
 import frontImg from '../assets/FRONT_IMG.png'
 import backImg from '../assets/BACK_IMG.png'
-import frontImg2 from '../assets/2FRONT.png'
-import backImg2 from '../assets/2BACK.png'
+import titleBackImg from '../assets/BIG_TITLE_BACK.webp'
 import place1 from '../assets/place1.webp'
 import place2 from '../assets/place2.webp'
 import place3 from '../assets/place3.webp'
@@ -320,10 +307,7 @@ const isFormValid = computed(() => {
 });
 
 const parallaxScroll = ref(0)
-const parallaxMix = ref(0)
 let parallaxScrollEl: HTMLElement | null = null
-const secondPanelRef = ref<HTMLElement | null>(null)
-let secondPanelObserver: IntersectionObserver | null = null
 
 const handleSocialPublish = () => {
   socialDrawerVisible.value = true
@@ -362,10 +346,8 @@ const parallaxStyle = computed(() => {
   return {
     '--parallax-scroll': `${parallaxScroll.value}px`,
     '--parallax-back-1': `url(${backImg})`,
-    '--parallax-front-1': `url(${frontImg})`,
-    '--parallax-back-2': `url(${backImg2})`,
-    '--parallax-front-2': `url(${frontImg2})`,
-    '--parallax-p2': `${parallaxMix.value}`
+    '--parallax-title-back': `url(${titleBackImg})`,
+    '--parallax-front-1': `url(${frontImg})`
   }
 })
 
@@ -410,32 +392,12 @@ onMounted(() => {
     parallaxScrollEl = document.querySelector('.index-tabs .el-tabs__content') as HTMLElement | null
     parallaxScrollEl?.addEventListener('scroll', handleParallaxScroll, { passive: true })
     handleParallaxScroll()
-
-    if (parallaxScrollEl && secondPanelRef.value) {
-      const thresholds = Array.from({ length: 11 }, (_, i) => i / 10)
-      secondPanelObserver = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0]
-          const ratio = entry?.intersectionRatio ?? 0
-          requestAnimationFrame(() => {
-            parallaxMix.value = Math.min(1, Math.max(0, ratio * 1.2))
-          })
-        },
-        {
-          root: parallaxScrollEl,
-          threshold: thresholds
-        }
-      )
-      secondPanelObserver.observe(secondPanelRef.value)
-    }
   })
 })
 
 onUnmounted(() => {
   parallaxScrollEl?.removeEventListener('scroll', handleParallaxScroll)
   parallaxScrollEl = null
-  secondPanelObserver?.disconnect()
-  secondPanelObserver = null
 })
 </script>
 
@@ -453,12 +415,12 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.el-carousel__item:nth-child(2n) {
-  background-color: #99a9bf;
+.el-carousel__item {
+  background-color: transparent !important;
 }
 
-.el-carousel__item:nth-child(2n + 1) {
-  background-color: #d3dce6;
+.custom-carousel :deep(.el-carousel__mask) {
+  background-color: transparent !important;
 }
 
 .custom-carousel {
@@ -476,15 +438,10 @@ onUnmounted(() => {
 }
 
 .carousel-image {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.el-carousel__item {
-  background-color: transparent !important;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
 
@@ -506,9 +463,9 @@ onUnmounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  padding: 20px 0;
+  padding: 80px 0 20px 0;
   position: relative;
   z-index: 1;
 }
@@ -544,6 +501,15 @@ html.dark .pageGuideArrow{
   background-image: var(--parallax-back-1);
   opacity: calc(1 - var(--parallax-p2));
   transform: translate3d(0, calc(var(--parallax-scroll) * -0.06), 0);
+}
+
+.parallax-title-back {
+  background-image: var(--parallax-title-back);
+  background-size: contain;
+  background-position: center 15%;
+  transform: translate3d(0, calc(var(--parallax-scroll) * -0.10), 0);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .parallax-front-1 {
@@ -590,23 +556,67 @@ html.dark .parallax-overlay {
   text-align: center;
   justify-content: center;
   width: 100%;
-  max-width: 800px;
+  max-width: 1800px;
   position: relative;
   z-index: 1;
 }
 
 .welcome-title {
-  font-size: 48px;
+  font-size: 52px;
   /* 欢迎标题颜色 */
-  color: #409eff;
+  color: #3b94ec;
   margin-bottom: 20px;
+  font-weight: bold;
 }
 
 .welcome-subtitle {
   font-size: 24px;
   /* 欢迎副标题颜色 */
-  color: #23A6EB;
-  margin-bottom: 40px;
+  color: #3b94ec;
+  margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 40px;
+}
+
+.big-action-btn {
+  padding: 25px 40px !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  color: white !important;
+}
+
+.big-action-btn.el-button--primary {
+  background: linear-gradient(to right, #83CFF9, #A8A7FE) !important;
+}
+
+.big-action-btn.el-button--success {
+  background: linear-gradient(to right, rgb(43, 208, 123), #5DE1C9) !important;
+}
+
+.big-action-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+}
+
+.carousel-section {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto 30px auto;
+}
+
+.carousel-title {
+  font-size: 20px;
+  color: #409eff;
+  margin-bottom: 15px;
+  text-align: center;
 }
 
 .feature-card {

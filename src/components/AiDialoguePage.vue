@@ -3,11 +3,10 @@
     <div class="chat-container">
       <div class="chat-messages" ref="messagesRef">
         <div v-if="messages.length === 0 && !isSettingsLoaded" class="empty-tip">
-          <el-empty description="加载设置中..." />
+          <el-empty :image="agentIcon" :image-size="200" description="加载设置中..." />
         </div>
         <div v-else-if="messages.length === 0" class="empty-tip">
-          <el-empty :description="welcomeMessage">
-            <el-tag v-if="currentProvider" type="success" effect="dark">当前设置API来源: {{ currentProvider }}</el-tag>
+          <el-empty :image="agentIcon" :image-size="200" :description="welcomeMessage">
           </el-empty>
         </div>
         
@@ -164,6 +163,7 @@ import { Loading, User, ChatDotRound } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import MarkdownIt from 'markdown-it'
+import agentIcon from '../assets/agent_icon.jpg'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -242,7 +242,7 @@ const currentProvider = computed(() => {
 })
 
 const welcomeMessage = computed(() => {
-  return `与 ${currentProvider.value} 开始对话`
+  return `与 文途智行 开始对话`
 })
 
 const loadSettings = () => {
@@ -763,6 +763,19 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
 
 html.dark .chat-container {
   background: transparent;
+}
+
+/* 空白状态图片样式：圆角效果 */
+.empty-tip :deep(.el-empty__image img) {
+  border-radius: 45px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 暗色模式下给空白状态图片设置偏黑色遮罩效果 */
+html.dark .empty-tip :deep(.el-empty__image img) {
+  filter: brightness(0.5) contrast(1.2);
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .message-card.user {

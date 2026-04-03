@@ -1,5 +1,13 @@
 <template>
   <div class="app-container">
+    <div class="header-controls">
+      <el-switch
+        v-model="isDarkMode"
+        active-text="暗色"
+        inactive-text="浅色"
+        @change="handleThemeChange"
+      />
+    </div>
     <el-tabs
       v-model="activeName"
       class="index-tabs"
@@ -22,13 +30,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import type { TabsPaneContext } from 'element-plus'
 import IndexPage from './components/IndexPage.vue'
 import AiDialoguePage from './components/AiDialoguePage.vue'
 import SettingPage from './components/SettingPage.vue'
 
 const activeName = ref('indexPage')
+const isDarkMode = ref(false)
 
 const handleClick = (tab: TabsPaneContext, event: Event) => {
   console.log(tab, event)
@@ -37,6 +46,28 @@ const handleClick = (tab: TabsPaneContext, event: Event) => {
 const handleNavigate = (tabName: string) => {
   activeName.value = tabName
 }
+
+const applyTheme = (isDark: boolean) => {
+  document.documentElement.classList.toggle('dark', isDark)
+  document.body.classList.toggle('dark', isDark)
+}
+
+const loadTheme = () => {
+  const saved = localStorage.getItem('theme-mode')
+  isDarkMode.value = saved === 'dark'
+  applyTheme(isDarkMode.value)
+}
+
+const handleThemeChange = (val: string | number | boolean) => {
+  const nextIsDark = Boolean(val)
+  isDarkMode.value = nextIsDark
+  localStorage.setItem('theme-mode', nextIsDark ? 'dark' : 'light')
+  applyTheme(nextIsDark)
+}
+
+onMounted(() => {
+  loadTheme()
+})
 </script>
 
 <style>
@@ -100,6 +131,15 @@ html, body {
   flex-direction: column;
   min-height: 0;
   position: relative;
+}
+
+.header-controls {
+  position: absolute;
+  top: 18px;
+  right: 30px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
 }
 
 .index-tabs {

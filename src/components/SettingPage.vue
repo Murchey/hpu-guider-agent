@@ -13,30 +13,11 @@
       </p>
     </el-card>
 
-    <el-card class="settings-card">
-      <template #header>
-        <div class="card-header">
-          <span>显示模式</span>
-        </div>
-      </template>
-      <el-form label-width="100px">
-        <el-form-item label="浅色 / 暗色">
-          <el-switch
-            v-model="isDarkMode"
-            active-text="暗色"
-            inactive-text="浅色"
-            @change="handleThemeChange"
-          />
-        </el-form-item>
-      </el-form>
-    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-
-const isDarkMode = ref(false)
 
 const MANUAL_API_SETTINGS = {
   // provider 可选：openai / siliconflow / zhipu / qwen / coze / custom
@@ -60,27 +41,8 @@ const applyManualApiSettings = () => {
 // 立即执行一次，确保 HMR 时也能同步最新的配置
 applyManualApiSettings()
 
-const applyTheme = (isDark: boolean) => {
-  document.documentElement.classList.toggle('dark', isDark)
-  document.body.classList.toggle('dark', isDark)
-}
-
-const loadTheme = () => {
-  const saved = localStorage.getItem('theme-mode')
-  isDarkMode.value = saved === 'dark'
-  applyTheme(isDarkMode.value)
-}
-
-const handleThemeChange = (val: string | number | boolean) => {
-  const nextIsDark = Boolean(val)
-  isDarkMode.value = nextIsDark
-  localStorage.setItem('theme-mode', nextIsDark ? 'dark' : 'light')
-  applyTheme(nextIsDark)
-}
-
 onMounted(() => {
   applyManualApiSettings()
-  loadTheme()
 })
 </script>
 
