@@ -362,6 +362,10 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     await scrollToBottom()
   }
 
+  // 先在列表中推入一个空的助手回复，用于流式更新
+  messages.value.push({ role: 'assistant', content: '' })
+  const assistantMsgIndex = messages.value.length - 1
+  
   isLoading.value = true
 
   try {
@@ -372,20 +376,21 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       throw new Error('API 地址不能为空，请在设置中配置正确的 API 地址')
     }
 
-    // 格式化 URL，移除结尾的斜杠和冗余的 /v3/chat
+    // 格式化 URL
     finalBaseURL = finalBaseURL.replace(/\/+$/, '').replace(/\/v3\/chat$/, '')
 
     let aiContent = ''
 
     if (provider === 'coze') {
-      if (!botId) {
-        throw new Error('Coze 模式下必须配置 Bot ID')
-      }
+      if (!botId) throw new Error('Coze 模式下必须配置 Bot ID')
       
-      // Coze v3 chat API
-      const chatResponse = await axios.post(
-        `${finalBaseURL}/v3/chat`,
-        {
+      const response = await fetch(`${finalBaseURL}/v3/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           bot_id: botId,
           user_id: 'user_' + Math.random().toString(36).substr(2, 9),
           additional_messages: [{
@@ -393,86 +398,130 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
             content: text,
             content_type: 'text'
           }],
-          stream: false
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 1200000 // 延长至 20 分钟
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(`Coze API 错误: ${response.status} ${JSON.stringify(errData)}`)
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      
+      if (!reader) throw new Error('无法读取响应流')
+
+      let buffer = ''
+      let currentEvent = ''
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        // 保留最后一行（可能是残缺的）
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmedLine = line.trim()
+          if (!trimmedLine) continue
+          
+          // 按照设计文档解析 SSE 格式
+          if (trimmedLine.startsWith('event:')) {
+            currentEvent = trimmedLine.slice(6).trim()
+          } else if (trimmedLine.startsWith('data:')) {
+            const dataContent = trimmedLine.slice(5).trim()
+            if (!dataContent) continue
+
+            try {
+              const data = JSON.parse(dataContent)
+              
+              // 根据文档，核心关注 conversation.message.delta 事件
+              if (currentEvent === 'conversation.message.delta') {
+                // data 中包含具体的消息片段
+                // 注意：Coze v3 的 delta 数据可能直接在 data 根部，也可能在 data.content
+                const delta = data.content || (data.message && data.message.content)
+                if (delta) {
+                  aiContent += delta
+                  messages.value[assistantMsgIndex].content = aiContent
+                  scrollToBottom()
+                }
+              } else if (currentEvent === 'error' || data.event === 'error') {
+                const errorMsg = data.msg || data.message || JSON.stringify(data)
+                throw new Error(`AI 流式错误: ${errorMsg}`)
+              }
+            } catch (e: any) {
+              if (e.message.includes('AI 流式错误')) throw e
+              // 忽略其他非 JSON 数据行
+            }
+          }
         }
-      )
-
-      const chatData = chatResponse.data.data
-      if (!chatData || !chatData.id) {
-        throw new Error('Coze 对话创建失败: ' + JSON.stringify(chatResponse.data))
       }
-
-      const chatId = chatData.id
-      const conversationId = chatData.conversation_id
-
-      // 轮询查询对话状态
-      let status = 'in_progress'
-      let pollCount = 0
-      while (status === 'in_progress' && pollCount < 1200) { // 轮询上限也增加到 20 分钟 (1200秒)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const retrieveRes = await axios.get(
-          `${finalBaseURL}/v3/chat/retrieve?chat_id=${chatId}&conversation_id=${conversationId}`,
-          {
-            headers: { 'Authorization': `Bearer ${apiKey}` },
-            timeout: 30000 // 单次查询超时 30s
-          }
-        )
-        status = retrieveRes.data.data.status
-        pollCount++
-      }
-
-      if (status === 'completed') {
-        const messageListRes = await axios.get(
-          `${finalBaseURL}/v3/chat/message/list?chat_id=${chatId}&conversation_id=${conversationId}`,
-          {
-            headers: { 'Authorization': `Bearer ${apiKey}` },
-            timeout: 60000 // 获取列表超时 60s
-          }
-        )
-        const assistantMsg = messageListRes.data.data.find((m: any) => m.role === 'assistant' && m.type === 'answer')
-        aiContent = assistantMsg ? assistantMsg.content : '未找到回复内容'
-      } else {
-        throw new Error('Coze 对话超时或失败: ' + status)
-      }
-
     } else {
-      // OpenAI 兼容 API
-      let headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+      // OpenAI 兼容 API 流式
+      const response = await fetch(`${finalBaseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: requestMessages,
+          stream: true
+        })
+      })
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(`API 错误: ${response.status} ${JSON.stringify(errData)}`)
       }
 
-      const requestData = {
-        model: model,
-        messages: requestMessages,
-        stream: false
-      }
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      
+      if (!reader) throw new Error('无法读取响应流')
 
-      const response = await axios.post(
-        `${finalBaseURL}/chat/completions`,
-        requestData,
-        {
-          headers,
-          timeout: 1200000 // 延长至 20 分钟
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmedLine = line.trim()
+          if (!trimmedLine || !trimmedLine.startsWith('data:')) continue
+          
+          const dataStr = trimmedLine.slice(5).trim()
+          if (dataStr === '[DONE]') break
+          
+          try {
+            const data = JSON.parse(dataStr)
+            const delta = data.choices?.[0]?.delta?.content || ''
+            if (delta) {
+              aiContent += delta
+              messages.value[assistantMsgIndex].content = aiContent
+              scrollToBottom()
+            }
+          } catch (e) {
+            // 忽略非 JSON 行
+          }
         }
-      )
-
-      aiContent = response.data.choices?.[0]?.message?.content || ''
+      }
     }
 
     if (!aiContent) {
       aiContent = 'AI 未返回有效回复'
+      messages.value[assistantMsgIndex].content = aiContent
     }
 
-    // 解析场景推荐数据 [SCENE_DATA]{...}[/SCENE_DATA]
-    // 包含对话框弹出逻辑
+    // 处理解析场景推荐数据 [SCENE_DATA]{...}[/SCENE_DATA]
+    // 注意：流式结束后再进行解析，因为标签可能被拆分在不同 chunk 中
     const sceneDataMatch = aiContent.match(/\[SCENE_DATA\]([\s\S]*?)\[\/SCENE_DATA\]/)
     if (sceneDataMatch) {
       try {
@@ -485,14 +534,12 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
           btn3: parsedData.btn3 || ''
         }
         sceneDialogVisible.value = true
-        // 清理显示内容中的原始标签
-        aiContent = aiContent.replace(/\[SCENE_DATA\][\s\S]*?\[\/SCENE_DATA\]/, '').trim()
+        messages.value[assistantMsgIndex].content = aiContent.replace(/\[SCENE_DATA\][\s\S]*?\[\/SCENE_DATA\]/, '').trim()
       } catch (e) {
         console.error('解析 SCENE_DATA 失败:', e)
       }
     }
 
-    // 解析多选推荐数据 [SELECT_DATA]{"options": ["A", "B"]}[/SELECT_DATA]
     const selectDataMatch = aiContent.match(/\[SELECT_DATA\]([\s\S]*?)\[\/SELECT_DATA\]/)
     if (selectDataMatch) {
       try {
@@ -501,30 +548,18 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         if (Array.isArray(parsedData.options)) {
           selectOptions.value = parsedData.options
           selectDescription.value = parsedData.description || ''
-          selectedValues.value = [] // 重置选择
+          selectedValues.value = []
           selectDialogVisible.value = true
-          // 清理显示内容中的原始标签
-          aiContent = aiContent.replace(/\[SELECT_DATA\][\s\S]*?\[\/SELECT_DATA\]/, '').trim()
+          messages.value[assistantMsgIndex].content = aiContent.replace(/\[SELECT_DATA\][\s\S]*?\[\/SELECT_DATA\]/, '').trim()
         }
       } catch (e) {
         console.error('解析 SELECT_DATA 失败:', e)
       }
     }
     
-    messages.value.push({ role: 'assistant', content: aiContent })
   } catch (error: any) {
     let errorMsg = error.message
-    
-    if (error.response?.data?.error) {
-      errorMsg = error.response.data.error.message || errorMsg
-    } else if (error.response?.data) {
-      errorMsg = JSON.stringify(error.response.data)
-    }
-    
-    messages.value.push({
-      role: 'assistant',
-      content: `❌ 请求失败：${errorMsg}\n\n请检查：\n1. API Key 是否正确\n2. API 余额是否充足\n3. 网络是否正常`
-    })
+    messages.value[assistantMsgIndex].content = `❌ 请求失败：${errorMsg}\n\n请检查设置或网络。`
   } finally {
     isLoading.value = false
     await scrollToBottom()
