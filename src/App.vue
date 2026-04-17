@@ -142,6 +142,31 @@ html, body {
   align-items: center;
 }
 
+/* 响应式适配：移动端 (屏幕宽度 <= 768px) */
+@media (max-width: 768px) {
+  .header-controls {
+    top: 15px;
+    right: 15px;
+  }
+  
+  .index-tabs .el-tabs__header {
+    padding: 10px 15px;
+  }
+  
+  .index-tabs .el-tabs__item {
+    padding: 0 10px;
+    font-size: 14px;
+  }
+  
+  .index-tabs .el-tabs__content {
+    padding: 65px 10px 10px 10px;
+  }
+  
+  .header-controls :deep(.el-switch__label) {
+    display: none;
+  }
+}
+
 .index-tabs {
   flex: 1;
   min-height: 0;

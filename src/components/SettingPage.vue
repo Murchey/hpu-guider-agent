@@ -62,6 +62,12 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+@media (max-width: 768px) {
+  .settings-card {
+    width: 95%;
+  }
+}
+
 .settings-card + .settings-card {
   margin-top: 15px;
 }

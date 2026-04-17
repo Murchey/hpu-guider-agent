@@ -84,7 +84,7 @@
     <el-dialog
       v-model="sceneDialogVisible"
       title="请选择下列选项"
-      width="900px"
+      :width="dialogWidth"
       center
       append-to-body
       class="scene-dialog"
@@ -128,7 +128,7 @@
     <el-dialog
       v-model="selectDialogVisible"
       title="请从以下选项中选择"
-      width="900px"
+      :width="dialogWidth"
       center
       append-to-body
       class="select-dialog"
@@ -178,6 +178,14 @@ const messages = ref<Message[]>([])
 const inputText = ref('')
 const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
+
+// 响应式判断
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+const dialogWidth = computed(() => isMobile.value ? '95%' : '900px')
 
 // 场景推荐对话框状态
 const sceneDialogVisible = ref(false)
@@ -583,11 +591,17 @@ const handleSendHidden = async (text: string) => {
 }
 
 onMounted(async () => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   await loadSettings()
   await nextTick()
   await new Promise(resolve => setTimeout(resolve, 300))
   checkAndSendUserProfile()
   checkAndSendSocialRequest()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
 })
 
 watch(() => props.activeTab, (newTab) => {
@@ -707,6 +721,46 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
 .message-content {
   flex: 1;
   max-width: 80%;
+}
+
+@media (max-width: 768px) {
+  .chat-messages {
+    padding: 10px;
+  }
+  
+  .message-content {
+    max-width: 90%;
+  }
+  
+  .chat-input {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  .chat-toolbar {
+    font-size: 12px;
+    gap: 8px;
+  }
+  
+  .mode-change-btn :deep(.el-segmented) {
+    --el-segmented-item-selected-color: var(--el-color-primary);
+  }
+  
+  .chat-textarea :deep(.el-textarea__inner) {
+    font-size: 14px;
+    padding: 8px;
+  }
+  
+  .chat-actions .el-button {
+    min-width: 60px;
+    padding: 8px 12px;
+  }
+  
+  .scene-btn {
+    font-size: 14px;
+    padding: 15px 0;
+  }
 }
 
 .message-role {

@@ -5,6 +5,9 @@
       class="shatter-sensor"
       @mousemove="handleShatterMouseMove"
       @mouseleave="handleShatterMouseLeave"
+      @touchstart="handleShatterTouchStart"
+      @touchmove="handleShatterTouchMove"
+      @touchend="handleShatterMouseLeave"
     >
       <img :src="titleBackImg" style="width: 100%; height: auto; opacity: 0; display: block;" />
     </div>
@@ -44,7 +47,7 @@
         <p class="welcome-subtitle">为您智能推荐导游路线和旅游项目</p>
         <!-- 精选景点走马灯 -->
         <div class="carousel-section">
-          <el-carousel :interval="4000" height="425px" class="custom-carousel" type="card">
+          <el-carousel :interval="4000" :height="carouselHeight" class="custom-carousel" :type="carouselType">
             <el-carousel-item v-for="(img, index) in recommendPlaces" :key="index">
               <div class="carousel-item-content">
                 <img :src="img" :alt="'place' + (index + 1)" class="carousel-image" />
@@ -68,7 +71,7 @@
         <el-drawer 
           v-model="dialogFormVisible" 
           title="请完成下面的问卷调查" 
-          size="900px"
+          :size="drawerSize"
           class="info-drawer"
           direction="rtl"
           append-to-body
@@ -225,7 +228,7 @@
         <el-drawer 
           v-model="socialDrawerVisible" 
           title="选择发布的平台" 
-          size="500px"
+          :size="drawerSize"
           class="info-drawer"
           direction="rtl"
           append-to-body
@@ -330,6 +333,16 @@ const travelFocusTips = [
 
 const formLabelWidth = '140px'
 
+// 响应式判断
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+const drawerSize = computed(() => isMobile.value ? '100%' : '900px')
+const carouselHeight = computed(() => isMobile.value ? '250px' : '425px')
+const carouselType = computed(() => isMobile.value ? '' : 'card')
+
 //表单验证函数：确保每个选项问题都有值
 const isFormValid = computed(() => {
   return form.travelNumber && form.travelDays && form.travelBudget && form.travelStyle && 
@@ -368,6 +381,20 @@ const handleShatterMouseMove = (e: MouseEvent) => {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   mousePos.x = e.clientX - rect.left
   mousePos.y = e.clientY - rect.top
+}
+
+const handleShatterTouchStart = (e: TouchEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const touch = e.touches[0]
+  mousePos.x = touch.clientX - rect.left
+  mousePos.y = touch.clientY - rect.top
+}
+
+const handleShatterTouchMove = (e: TouchEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const touch = e.touches[0]
+  mousePos.x = touch.clientX - rect.left
+  mousePos.y = touch.clientY - rect.top
 }
 
 const handleShatterMouseLeave = () => {
@@ -508,6 +535,8 @@ const afterConfirmMsgBox = () => {
 }
 
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   nextTick(() => {
     parallaxScrollEl = document.querySelector('.index-tabs .el-tabs__content') as HTMLElement | null
     parallaxScrollEl?.addEventListener('scroll', handleParallaxScroll, { passive: true })
@@ -516,6 +545,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   parallaxScrollEl?.removeEventListener('scroll', handleParallaxScroll)
   parallaxScrollEl = null
 })
@@ -805,6 +835,47 @@ html.dark .parallax-overlay {
   margin-bottom: 20px;
   font-weight: bold;
   pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+  
+  .welcome-subtitle {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 15px !important;
+    padding: 0 20px;
+  }
+  
+  .big-action-btn {
+    padding: 15px 30px !important;
+    font-size: 16px !important;
+    width: 100%;
+  }
+  
+  .profile-form :deep(.el-form-item__label) {
+    min-width: 100px !important;
+    font-size: 14px !important;
+  }
+  
+  .profile-form :deep(.el-form-item) {
+    margin-bottom: 15px !important;
+  }
+  
+  .shatter-wrapper, .shatter-sensor {
+    top: 65px !important;
+  }
+  
+  .panel {
+    padding-top: 65px !important;
+  }
 }
 
 .welcome-subtitle {
