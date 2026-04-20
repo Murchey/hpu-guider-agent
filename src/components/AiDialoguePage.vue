@@ -469,7 +469,7 @@ const handleSelectConfirm = () => {
   selectDialogVisible.value = false
   
   // 隐藏发送用户的选择，格式为 JSON 数组
-  const hiddenPrompt = `[USER_CHOICE]{"values": ${JSON.stringify(selections)}}[/USER_CHOICE]`
+  const hiddenPrompt = `model:确定游览方案\n[USER_CHOICE]{"values": ${JSON.stringify(selections)}}[/USER_CHOICE]`
   handleSendHidden(hiddenPrompt).catch(err => {
     ElMessage.error('发送选择失败: ' + err.message)
   })
