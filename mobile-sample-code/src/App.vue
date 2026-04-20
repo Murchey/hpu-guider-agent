@@ -11,26 +11,55 @@
     <el-tabs
       v-model="activeName"
       class="index-tabs"
-      @tab-click="handleClick">
+      tab-position="bottom">
       
-      <el-tab-pane label="首页" name="indexPage">
+      <el-tab-pane name="indexPage">
         <IndexPage @navigate="handleNavigate" />
       </el-tab-pane>
       
-      <el-tab-pane label="AI对话" name="aiDialogue">
+      <el-tab-pane name="aiDialogue">
         <AiDialoguePage :active-tab="activeName" />
       </el-tab-pane>
       
-      <el-tab-pane label="设置" name="settingPage">
-        <SettingPage />
+      <el-tab-pane name="settingPage">
+        <SettingPage @navigate="handleNavigate" />
       </el-tab-pane>
       
     </el-tabs>
+
+    <!-- 自定义底部导航栏 -->
+    <div class="custom-bottom-nav">
+      <div 
+        class="nav-item" 
+        :class="{ active: activeName === 'indexPage' }"
+        @click="activeName = 'indexPage'"
+      >
+        <el-icon><HomeFilled /></el-icon>
+        <span class="nav-label">首页</span>
+      </div>
+      <div 
+        class="nav-item" 
+        :class="{ active: activeName === 'aiDialogue' }"
+        @click="activeName = 'aiDialogue'"
+      >
+        <el-icon><ChatLineRound /></el-icon>
+        <span class="nav-label">AI对话</span>
+      </div>
+      <div 
+        class="nav-item" 
+        :class="{ active: activeName === 'settingPage' }"
+        @click="activeName = 'settingPage'"
+      >
+        <el-icon><Setting /></el-icon>
+        <span class="nav-label">设置</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
+import { HomeFilled, ChatLineRound, Setting } from '@element-plus/icons-vue'
 import type { TabsPaneContext } from 'element-plus'
 import IndexPage from './components/IndexPage.vue'
 import AiDialoguePage from './components/AiDialoguePage.vue'
@@ -72,8 +101,10 @@ onMounted(() => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       console.log('App 进入后台，保存关键状态...')
+      // 可以在此处停止耗时的动画或轮询
     } else {
       console.log('App 返回前台，恢复状态...')
+      // 可以在此处检查配置是否需要重载
     }
   })
 })
@@ -143,45 +174,71 @@ html, body {
 }
 
 .header-controls {
-  position: absolute;
-  top: 18px;
-  right: 30px;
-  z-index: 20;
+  position: fixed; /* 改为 fixed 以便在长滚屏页面中始终可见 */
+  top: calc(10px + env(safe-area-inset-top)); /* 考虑手机顶部的安全区域（如灵动岛、挖孔） */
+  right: 20px;
+  z-index: 2000;
   display: flex;
   align-items: center;
+  background: var(--app-tabs-header-bg);
+  padding: 6px 12px;
+  border-radius: 25px;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--app-tabs-header-border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* 响应式适配：移动端 (屏幕宽度 <= 768px) */
 @media (max-width: 768px) {
   .header-controls {
-    position: fixed;
     top: 10px;
     right: 15px;
-    background: var(--app-tabs-header-bg);
-    padding: 4px 10px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--app-tabs-header-border-color);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 2000;
-  }
-  
-  .index-tabs .el-tabs__header {
-    padding: 10px 15px;
-  }
-  
-  .index-tabs .el-tabs__item {
-    padding: 0 10px;
-    font-size: 14px;
-  }
-  
-  .index-tabs .el-tabs__content {
-    padding: 65px 10px 10px 10px;
+    padding: 2px 6px;
   }
   
   .header-controls :deep(.el-switch__label) {
     display: none;
   }
+  
+  .header-controls :deep(.el-switch) {
+    height: 20px;
+  }
+
+  .index-tabs .el-tabs__item {
+    font-size: 14px;
+    height: 60px;
+  }
+  
+  .version-tag {
+  position: fixed;
+  bottom: 2px;
+  right: 5px;
+  font-size: 8px;
+  color: rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  pointer-events: none;
+}
+
+html.dark .version-tag {
+  color: rgba(255, 255, 255, 0.1);
+}
+
+.index-tabs .el-tabs__content {
+    padding: 0;
+    padding-bottom: 60px;
+  }
+}
+
+/* 强制隐藏所有 Element Plus 选项卡头部 */
+:deep(.el-tabs__header),
+.el-tabs__header {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .index-tabs {
@@ -191,23 +248,51 @@ html, body {
   flex-direction: column;
 }
 
+/* 隐藏原本的 el-tabs 头部，改用自定义底部导航 */
 .index-tabs .el-tabs__header {
-  margin: 0px;
-  padding: 20px;
-  /* ========= 可自定义：导航栏背景（支持高斯模糊） ========= */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  background: var(--app-tabs-header-bg);
-  border-bottom: 1px solid var(--app-tabs-header-border-color);
-  backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
+  display: none !important;
 }
 
-.index-tabs .el-tabs__nav-wrap::after {
-  display: none;
+.custom-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65px; /* 从 70px 略微下调，更适合 812px 高度 */
+  background: var(--app-tabs-header-bg);
+  backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--app-tabs-header-blur)) saturate(180%);
+  border-top: 1px solid var(--app-tabs-header-border-color);
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  flex: 1;
+  max-width: 120px; /* 回归紧凑宽度 */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-item .el-icon {
+  font-size: 24px; /* 稍微缩小图标 */
+  margin-bottom: 3px;
+}
+
+.nav-label {
+  font-size: 11px; /* 字体微调，更符合 375 宽度 */
+  font-weight: 600;
+  line-height: 1;
 }
 
 .index-tabs .el-tabs__content {
@@ -215,8 +300,7 @@ html, body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  /* 顶部留出导航栏的高度空间，避免内容被遮挡 (根据实际高度调整) */
-  padding: 80px 20px 20px 20px;
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)); /* 匹配导航栏高度 */
   box-sizing: border-box;
   background: transparent;
   
@@ -232,18 +316,6 @@ html, body {
 
 .index-tabs .el-tab-pane {
   height: 100%;
-}
-
-.index-tabs .el-tabs__item {
-  color: var(--el-text-color-regular);
-}
-
-.index-tabs .el-tabs__item.is-active {
-  color: var(--el-color-primary);
-}
-
-.index-tabs .el-tabs__active-bar {
-  background-color: var(--el-color-primary);
 }
 
 .info-dialog .el-dialog__header {

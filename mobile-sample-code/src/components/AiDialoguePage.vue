@@ -3,10 +3,10 @@
     <div class="chat-container">
       <div class="chat-messages" ref="messagesRef">
         <div v-if="messages.length === 0 && !isSettingsLoaded" class="empty-tip">
-          <el-empty :image="agentIcon" :image-size="200" description="加载设置中..." />
+          <el-empty :image="agentIcon" :image-size="emptyImageSize" description="加载设置中..." />
         </div>
         <div v-else-if="messages.length === 0" class="empty-tip">
-          <el-empty :image="agentIcon" :image-size="200" :description="welcomeMessage">
+          <el-empty :image="agentIcon" :image-size="emptyImageSize" :description="welcomeMessage">
           </el-empty>
         </div>
         
@@ -74,14 +74,6 @@
               上传图片
             </el-button>
           </el-upload>
-          <el-button
-            class="chat-toolbar-clear"
-            type="danger"
-            :disabled="messages.length === 0 || isLoading"
-            @click="clearChat"
-          >
-            清空聊天
-          </el-button>
         </div>
         <div v-if="uploadedImageUrl" class="image-preview-container">
           <div class="image-preview-wrapper">
@@ -103,8 +95,8 @@
             <el-input
               v-model="inputText"
               type="textarea"
-              placeholder="输入消息... (Enter 发送，Shift+Enter 换行)"
-              :autosize="{ minRows: 2, maxRows: 6 }"
+              placeholder="输入消息..."
+              :autosize="{ minRows: 1, maxRows: 4 }"
               :disabled="isLoading"
               @keydown.enter.exact.prevent="handleSend"
               @keydown.shift.enter.prevent="handleNewLine"
@@ -117,7 +109,7 @@
               :disabled="!inputText.trim() || isLoading"
               @click="handleSend"
             >
-              发送
+              <el-icon :size="20"><Promotion /></el-icon>
             </el-button>
           </div>
         </div>
@@ -202,7 +194,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
-import { Loading, User, ChatDotRound, Picture, CircleClose } from '@element-plus/icons-vue'
+import { Loading, User, ChatDotRound, Promotion, Picture, CircleClose } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import MarkdownIt from 'markdown-it'
@@ -346,12 +338,12 @@ const modeOptionsBtnGroup = computed(() => {
 })
 
 const apiSettings = ref({
-  provider: 'openai',
-  baseURL: '',
-  apiKey: '',
-  model: 'gpt-3.5-turbo',
-  botId: '',
-  imageMode: 'base64'
+  provider: 'coze',
+  baseURL: 'https://api.coze.cn',
+  apiKey: 'pat_dwOqipNExoqRFtk4RkKhyj3IkxvaMPU2ozUrle8yvhleoJe6OCIEXWVvfbCH4GlA',
+  model: '',
+  botId: '7622230218706731042',
+  imageMode: 'coze'
 })
 
 const isSettingsLoaded = ref(false)
@@ -1015,16 +1007,6 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
   padding: 12px 16px;
 }
 
-.message-image-wrapper {
-  margin-bottom: 8px;
-  max-width: 300px;
-}
-
-.message-image {
-  width: 100%;
-  border-radius: 8px;
-  cursor: zoom-in;
-}
 
 .message-text {
   line-height: 1.6;
@@ -1038,6 +1020,8 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
   margin: 8px 0;
   display: block;
 }
+
+
 
 .loading-card {
   display: flex;
@@ -1054,82 +1038,10 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
   to { transform: rotate(360deg); }
 }
 
-.chat-input-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
-}
 
-.chat-textarea {
-  flex: 1;
-}
-
-.chat-toolbar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.chat-toolbar-upload :deep(.el-upload) {
-  display: flex;
-  align-items: center;
-}
 
 .chat-toolbar-clear {
   margin-left: auto;
-}
-
-.image-preview-container {
-  padding: 8px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  display: flex;
-  gap: 8px;
-}
-
-.image-preview-wrapper {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-
-.image-preview {
-  width: 100%;
-  height: 100%;
-  border-radius: 4px;
-}
-
-.remove-image-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  cursor: pointer;
-  color: var(--el-color-danger);
-  background: white;
-  border-radius: 50%;
-  font-size: 18px;
-}
-
-.upload-loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.chat-actions {
-  display: flex;
-  align-self: flex-end;
-}
-
-.chat-actions .el-button {
-  margin-left: 0;
-  height: 40px;
 }
 
 .empty-tip {
@@ -1244,6 +1156,72 @@ html.dark .message-card.assistant {
   border-color: #29292A;
 }
 
+/* 图片上传与预览相关样式 */
+.chat-toolbar-upload {
+  margin-left: auto;
+}
+
+.image-preview-container {
+  padding: 10px 15px;
+  background: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-light);
+  display: flex;
+  align-items: center;
+}
+
+.image-preview-wrapper {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color);
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 18px;
+  color: var(--el-color-danger);
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.upload-loading-overlay {
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.message-image-wrapper {
+  margin-bottom: 8px;
+  width: 50px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.message-image {
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+}
+
+.message-item.user .message-image-wrapper {
+  margin-left: auto;
+}
+
 html.dark .message-card.user .message-text {
   /* ========= 可自定义：用户聊天框文字颜色（深色模式） ========= */
   color: #000000;
@@ -1278,14 +1256,85 @@ html.dark .chat-input {
   border-top-color: #29292A;
 }
 .chat-input {
-  /* ========= 可自定义：底部聊天栏（浅色模式）背景颜色 ========= */
   position: sticky;
   bottom: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 15px;
   background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-lighter);
+  border-top: 1px solid var(--el-border-color-light);
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+  z-index: 10;
+}
+
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.chat-toolbar span {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chat-textarea {
+  flex: 1;
+}
+
+.chat-textarea :deep(.el-textarea__inner) {
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--el-fill-color-lighter);
+  border: none;
+  resize: none;
+  transition: all 0.3s;
+}
+
+.chat-textarea :deep(.el-textarea__inner:focus) {
+  background: var(--el-bg-color);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.chat-actions .el-button {
+  height: 40px;
+  width: 40px;
+  border-radius: 10px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .message-item {
+    padding: 10px 0;
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .message-card {
+    padding: 10px 12px !important;
+  }
+  
+  .chat-toolbar-clear {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  
+  .mode-change-btn :deep(.el-segmented) {
+    --el-segmented-item-selected-bg-color: var(--el-color-primary-light-9);
+  }
 }
 
 /* ========= 可自定义：底部聊天栏按钮颜色（仅聊天区范围） =========

@@ -124,7 +124,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
-import { Setting, Refresh, Edit, ChatDotRound, Promotion } from '@element-plus/icons-vue'
+import { Setting, Refresh, Link, Edit, ChatDotRound, Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const showCustomSettings = ref(false)
@@ -308,12 +308,6 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-  .settings-card {
-    width: 95%;
-  }
 }
 
 .custom-api-card {
