@@ -109,12 +109,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, shallowRef, nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { Van, CaretTop, CaretBottom, LocationFilled, Bicycle, Guide, Bicycle as CyclingIcon, Promotion } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { useChatStore } from '../stores/chatStore'
 import { ElMessage } from 'element-plus'
+
+const props = defineProps<{
+  activeTab?: string
+}>()
 
 const emit = defineEmits<{
   (e: 'navigate', tabName: string): void
@@ -123,6 +127,49 @@ const emit = defineEmits<{
 const chatStore = useChatStore()
 const itineraryList = ref<any[]>([])
 const travelTimes = ref<Record<number, string>>({})
+
+// 使用 shallowRef 避免 Vue 对 SDK 内部对象进行 Proxy 包装，导致内部调用失败
+const AMapInstance = shallowRef<any>(null)
+const map = shallowRef<any>(null)
+const calculators = shallowRef<Record<string, any>>({})
+
+// 监听 tab 切换，当切换到地图页时执行 resize
+watch(() => props.activeTab, (newTab) => {
+  if (newTab === 'mapPlanning' && map.value) {
+    console.log('地图页激活，执行 resize 并尝试重绘')
+    nextTick(async () => {
+      map.value.resize()
+      // 如果已经有数据，强制触发一次重绘，确保在容器尺寸正确后显示标记
+      if (itineraryList.value.length > 0) {
+        await updateMap()
+      }
+    })
+  }
+})
+const isMapInitialized = computed(() => {
+  const hasMap = !!map.value
+  const hasInstance = !!AMapInstance.value
+  const hasDriving = !!calculators.value?.driving
+  
+  const isReady = hasMap && hasInstance && hasDriving
+  
+  if (!isReady) {
+    console.log('地图初始化状态未就绪:', { 
+      hasMap, 
+      hasInstance, 
+      hasDriving,
+      calculatorsExist: !!calculators.value,
+      drivingProp: calculators.value?.driving
+    })
+  } else {
+    console.log('地图初始化状态已就绪!')
+  }
+  return isReady
+})
+
+let driving: any = null
+let markers: any[] = []
+let polylines: any[] = []
 
 // 计算简要路径名称
 const routeSummary = computed(() => {
@@ -134,7 +181,7 @@ const moveUp = (index: number) => {
   if (index === 0) return
   // 如果当前是第1个景点（index 1），且第0个是出发地，禁止上移
   if (index === 1 && itineraryList.value[0].type === 'departure') return
-  
+
   const item = itineraryList.value.splice(index, 1)[0]
   itineraryList.value.splice(index - 1, 0, item)
   updateMap()
@@ -144,22 +191,17 @@ const moveDown = (index: number) => {
   if (index === itineraryList.value.length - 1) return
   // 如果当前是出发地，禁止下移
   if (itineraryList.value[index].type === 'departure') return
-  
+
   const item = itineraryList.value.splice(index, 1)[0]
   itineraryList.value.splice(index + 1, 0, item)
   updateMap()
 }
 
-let AMapInstance: any = null
-let map: any = null
-let driving: any = null // 保留作为默认全局路径显示（如果全是驾车）
-let calculators: Record<string, any> = {} // 存储各模式的计算实例
-let markers: any[] = []
-let polylines: any[] = [] // 存储手动绘制的各路段轨迹线
-
 const handleModeChange = (index: number, mode: string) => {
-  itineraryList.value[index].travel_mode = mode
-  updateMap()
+  if (itineraryList.value[index]) {
+    itineraryList.value[index].travel_mode = mode
+    updateMap()
+  }
 }
 
 const getTravelTime = (index: number) => {
@@ -167,6 +209,7 @@ const getTravelTime = (index: number) => {
 }
 
 const initMap = async () => {
+  console.log('开始执行 initMap...')
   const amapKey = import.meta.env.VITE_AMAP_KEY
   const securityCode = import.meta.env.VITE_AMAP_SECURITY_CODE
 
@@ -181,36 +224,75 @@ const initMap = async () => {
       securityJsCode: securityCode,
     }
 
-    AMapInstance = await AMapLoader.load({
+    console.log('正在调用 AMapLoader.load...')
+    const AMap = await AMapLoader.load({
       key: amapKey,
       version: '2.0',
       plugins: [
-        'AMap.Driving', 
-        'AMap.Walking', 
-        'AMap.Transit', 
-        'AMap.Riding', 
-        'AMap.Marker'
+        'AMap.Driving',
+        'AMap.Walking',
+        'AMap.Transit',
+        'AMap.Riding',
+        'AMap.Marker',
+        'AMap.Polyline'
       ]
     })
+    console.log('AMapLoader.load 完成')
 
-    map = new AMapInstance.Map('map-container', {
+    AMapInstance.value = AMap
+
+    const container = document.getElementById('map-container')
+    if (!container) {
+      console.error('致命错误: 找不到 map-container 元素')
+      return
+    }
+
+    console.log('正在创建 Map 实例...')
+    map.value = new AMap.Map('map-container', {
       zoom: 12,
       center: [116.397, 39.908]
     })
+    console.log('Map 实例创建成功')
 
-    // 初始化各模式的规划实例 (不传入 map: map, 仅用于获取数据)
+    // 确保所有规划实例已创建且属性完整
     const commonConfig = { hideMarkers: true }
-    calculators = {
-      driving: new AMapInstance.Driving({ ...commonConfig }),
-      walking: new AMapInstance.Walking({ ...commonConfig }),
-      transit: new AMapInstance.Transit({ ...commonConfig, city: '洛阳' }),
-      cycling: new AMapInstance.Riding({ ...commonConfig }) // 高德插件名为 Riding
+    console.log('正在初始化各模式规划器...')
+    
+    const tempCalculators: any = {}
+    
+    try {
+      if (AMap.Driving) {
+        tempCalculators.driving = new AMap.Driving({ ...commonConfig })
+        console.log('Driving 规划器就绪')
+      } else {
+        console.warn('AMap.Driving 插件未找到')
+      }
+
+      if (AMap.Walking) {
+        tempCalculators.walking = new AMap.Walking({ ...commonConfig })
+        console.log('Walking 规划器就绪')
+      }
+
+      if (AMap.Transit) {
+        tempCalculators.transit = new AMap.Transit({ ...commonConfig, city: '洛阳' })
+        console.log('Transit 规划器就绪')
+      }
+
+      if (AMap.Riding) {
+        tempCalculators.cycling = new AMap.Riding({ ...commonConfig })
+        console.log('Riding 规划器就绪')
+      }
+    } catch (calcErr) {
+      console.error('初始化规划器过程中发生错误:', calcErr)
     }
 
-    // 默认展示实例（驾车）
-    driving = calculators.driving
+    // 原子操作赋值
+    calculators.value = tempCalculators
+    driving = tempCalculators.driving
+    console.log('所有规划器赋值完成，calculators.value:', Object.keys(calculators.value))
 
     if (chatStore.currentMapData) {
+      console.log('initMap 发现已有数据，触发首次 updateMap')
       itineraryList.value = chatStore.currentMapData.itinerary.map(item => ({
         ...item,
         travel_mode: item.travel_mode || 'driving'
@@ -218,47 +300,111 @@ const initMap = async () => {
       await updateMap()
     }
   } catch (e) {
-    console.error('地图加载失败', e)
+    console.error('地图加载或初始化过程中捕获到异常:', e)
+    ElMessage.error('地图初始化失败，请检查网络或 Key 配置')
   }
 }
 
+let updateTimer: any = null
 const updateMap = async () => {
-  if (!map || !AMapInstance || itineraryList.value.length === 0) return
+  // 增加对就绪状态的校验
+  if (!isMapInitialized.value) {
+    console.log('地图更新被跳过: 基础实例或规划器尚未就绪')
+    return
+  }
 
-  // 清除旧标记和旧路径
-  markers.forEach(m => m.setMap(null))
-  markers = []
-  
-  // 清除旧轨迹线
-  polylines.forEach(p => p.setMap(null))
-  polylines = []
-  
-  // 清除所有规划实例的内部状态
-  Object.values(calculators).forEach(calc => {
-    if (calc && calc.clear) calc.clear()
-  })
+  // 防抖处理，避免短时间内多次重绘导致的性能问题和浏览器警告
+  if (updateTimer) clearTimeout(updateTimer)
+  updateTimer = setTimeout(async () => {
+    const AMap = AMapInstance.value
+    if (!AMap || !map.value) return
 
-  // 添加新标记
-  itineraryList.value.forEach((item, index) => {
-    const isDeparture = item.type === 'departure'
-    const marker = new AMapInstance.Marker({
-      position: [Number(item.coordinates.lng), Number(item.coordinates.lat)],
-      label: {
-        content: `<div class="marker-label ${isDeparture ? 'is-departure' : ''}">${isDeparture ? '起' : index + 1}</div>`,
-        direction: 'top',
-        offset: new AMapInstance.Pixel(0, -5)
-      },
-      map: map,
-      zIndex: isDeparture ? 110 : 100
+    const container = document.getElementById('map-container')
+    if (container) {
+      const { offsetWidth, offsetHeight } = container
+      console.log('当前地图容器尺寸:', { width: offsetWidth, height: offsetHeight })
+      if (offsetHeight === 0) {
+        console.warn('地图容器高度为 0，可能导致地图不可见')
+      }
+    }
+
+    if (itineraryList.value.length === 0) {
+      console.log('地图更新被跳过: 行程列表为空')
+      return
+    }
+
+    try {
+      console.log(`开始执行 updateMap 重绘逻辑... 地点总数: ${itineraryList.value.length}`)
+      if (itineraryList.value.length > 0) {
+        console.log('行程数据示例:', JSON.stringify(itineraryList.value[0]))
+      }
+      
+      // 清除旧标记和旧路径
+      markers.forEach(m => {
+        if (m) m.setMap(null)
+      })
+      markers = []
+
+      // 清除旧轨迹线
+      polylines.forEach(p => p.setMap(null))
+      polylines = []
+
+      // 清除所有规划实例的内部状态
+      if (calculators.value) {
+        Object.values(calculators.value).forEach(calc => {
+          if (calc && typeof calc.clear === 'function') calc.clear()
+        })
+      }
+
+    // 添加新标记
+    itineraryList.value.forEach((item, index) => {
+      const lng = Number(item.coordinates?.lng)
+      const lat = Number(item.coordinates?.lat)
+      
+      if (isNaN(lng) || isNaN(lat)) {
+        console.error(`地点 ${index + 1}: ${item.name} 坐标无效:`, item.coordinates)
+        return
+      }
+
+      console.log(`正在创建标记: ${index + 1}. ${item.name} (${lng}, ${lat})`)
+      const isDeparture = item.type === 'departure'
+      
+      try {
+        const marker = new AMap.Marker({
+          position: new AMap.LngLat(lng, lat),
+          label: {
+            content: `<div class="marker-label ${isDeparture ? 'is-departure' : ''}">${isDeparture ? '起' : index + 1}</div>`,
+            direction: 'top',
+            offset: new AMap.Pixel(0, -5)
+          },
+          map: map.value,
+          zIndex: isDeparture ? 110 : 100
+        })
+        markers.push(marker)
+        console.log(`标记 ${index + 1} 创建成功并添加到地图`)
+      } catch (markerErr) {
+        console.error(`标记 ${index + 1} 创建失败:`, markerErr)
+      }
     })
-    markers.push(marker)
-  })
 
-  // 绘制各路段并等待完成
-  await drawSegments()
-  
-  // 自动缩放以显示所有点（包括新生成的 Polyline）
-  map.setFitView()
+      // 添加新标记后立即执行一次缩放，确保标记可见
+      if (map.value && markers.length > 0) {
+        console.log('标记添加完成，执行初始 setFitView')
+        map.value.setFitView(markers)
+      }
+
+      // 绘制各路段并等待完成
+      await drawSegments()
+
+      // 全部绘制完成后再次缩放，包含路径
+      if (map.value && markers.length > 0) {
+        console.log('路径绘制完成，执行最终 setFitView')
+        map.value.setFitView()
+      }
+    } catch (err) {
+      console.error('更新地图过程中发生错误:', err)
+    }
+  }, 100)
 }
 
 // 定义模式对应的颜色
@@ -270,25 +416,44 @@ const modeColors: Record<string, string> = {
 }
 
 const drawSegments = async () => {
-  if (itineraryList.value.length < 2) return
+  if (itineraryList.value.length < 2 || !calculators.value.driving) return
+
+  const AMap = AMapInstance.value
+  if (!AMap) return
 
   // 逐段规划和绘制
   for (let i = 0; i < itineraryList.value.length - 1; i++) {
     const p1 = itineraryList.value[i]
     const p2 = itineraryList.value[i+1]
-    const mode = p1.travel_mode || 'driving'
-    const calculator = calculators[mode]
 
-    if (!calculator) {
-      console.warn(`未找到模式 ${mode} 的规划器`)
+    // 坐标校验
+    const lng1 = Number(p1.coordinates.lng)
+    const lat1 = Number(p1.coordinates.lat)
+    const lng2 = Number(p2.coordinates.lng)
+    const lat2 = Number(p2.coordinates.lat)
+
+    if (isNaN(lng1) || isNaN(lat1) || isNaN(lng2) || isNaN(lat2)) {
+      console.error(`第 ${i+1} 段坐标无效:`, p1.coordinates, p2.coordinates)
+      travelTimes.value[i] = '坐标错误'
       continue
     }
 
-    const start = [Number(p1.coordinates.lng), Number(p1.coordinates.lat)]
-    const end = [Number(p2.coordinates.lng), Number(p2.coordinates.lat)]
+    const mode = p1.travel_mode || 'driving'
+    const calculator = calculators.value[mode]
+
+    if (!calculator) {
+      console.warn(`未找到模式 ${mode} 的规划器，跳过此段规划`)
+      continue
+    }
+
+    // 统一使用 LngLat 对象作为参数
+    const start = new AMap.LngLat(lng1, lat1)
+    const end = new AMap.LngLat(lng2, lat2)
 
     await new Promise((resolve) => {
       calculator.search(start, end, (status: string, result: any) => {
+        console.log(`第 ${i+1} 段规划状态 (${mode}):`, status)
+
         if (status === 'complete') {
           let routeData: any = null
           let path: any[] = []
@@ -296,16 +461,16 @@ const drawSegments = async () => {
           // 1. 根据不同模式解析数据源
           if (mode === 'transit' && result.plans && result.plans[0]) {
             routeData = result.plans[0]
-            // 公交模式轨迹点需要遍历 segments
             if (routeData.segments) {
               routeData.segments.forEach((seg: any) => {
                 if (seg.transit && seg.transit.path) path.push(...seg.transit.path)
                 if (seg.walking && seg.walking.path) path.push(...seg.walking.path)
               })
+            } else if (routeData.path) {
+              path = routeData.path
             }
           } else if (result.routes && result.routes[0]) {
             routeData = result.routes[0]
-            // 驾车、步行、骑行优先取全局 path，无则遍历 steps
             if (routeData.path && routeData.path.length > 0) {
               path = routeData.path
             } else if (routeData.steps) {
@@ -315,33 +480,46 @@ const drawSegments = async () => {
             }
           }
 
-          if (path.length > 0) {
+          if (path && path.length > 0) {
             const duration = routeData.time ? Math.ceil(routeData.time / 60) : 0
             travelTimes.value[i] = duration > 0 ? `约 ${duration} 分钟` : '实时计算中'
 
-            // 2. 强制转换坐标格式，确保 Polyline 100% 识别
+            // 2. 转换坐标为 LngLat 对象数组
             const lngLats = path.map(p => {
-              const lng = p.lng !== undefined ? p.lng : p[0]
-              const lat = p.lat !== undefined ? p.lat : p[1]
-              return new AMapInstance.LngLat(lng, lat)
-            })
+              let lng, lat;
+              if (Array.isArray(p)) {
+                lng = p[0]; lat = p[1];
+              } else if (p.getLng && typeof p.getLng === 'function') {
+                lng = p.getLng(); lat = p.getLat();
+              } else if (p.lng && p.lat) {
+                lng = p.lng; lat = p.lat;
+              } else {
+                lng = p[0]; lat = p[1];
+              }
+              return new AMap.LngLat(Number(lng), Number(lat));
+            });
 
-            // 3. 创建并添加折线
-            const polyline = new AMapInstance.Polyline({
-              path: lngLats,
-              strokeColor: modeColors[mode] || '#409EFF',
-              strokeWeight: 6,
-              strokeOpacity: 0.9,
-              lineJoin: 'round',
-              lineCap: 'round',
-              zIndex: 50,
-              bubble: true
-            })
-            
-            polyline.setMap(map)
-            polylines.push(polyline)
+            // 3. 创建折线并显式添加到地图
+            try {
+              const polyline = new AMap.Polyline({
+                path: lngLats,
+                strokeColor: modeColors[mode] || '#409EFF',
+                strokeWeight: 8,
+                strokeOpacity: 1,
+                lineJoin: 'round',
+                lineCap: 'round',
+                zIndex: 1000,
+                showDir: true
+              })
+
+              map.value.add(polyline)
+              polylines.push(polyline)
+              console.log(`第 ${i+1} 段路径绘制成功, 点数: ${lngLats.length}, 模式: ${mode}`)
+            } catch (err) {
+              console.error(`第 ${i+1} 段折线创建失败:`, err)
+            }
           } else {
-            console.error(`第 ${i+1} 段 (${mode}) 规划成功但未解析到路径`, result)
+            console.error(`第 ${i+1} 段 (${mode}) 规划成功但未解析到有效轨迹点`, result)
           }
         } else {
           travelTimes.value[i] = '规划失败'
@@ -383,33 +561,50 @@ const handleConfirm = () => {
   }
 
   const message = `[MAP_CONFIRM]${JSON.stringify(confirmData)}[/MAP_CONFIRM]`
-  
+
   // 将消息存入 localStorage 供对话页读取并发送
   localStorage.setItem('pending-map-confirm', message)
-  
+
   ElMessage.success('行程已确认，正在同步至 AI 对话...')
-  
+
   // 跳转回对话页
   emit('navigate', 'aiDialogue')
 }
 
-watch(() => chatStore.currentMapData, async (newData) => {
-  if (newData) {
+// 监听数据和初始化状态，确保在两者都就绪时自动触发更新
+watch([() => chatStore.currentMapData, isMapInitialized], async ([newData, initialized]) => {
+  console.log('watch [currentMapData, isMapInitialized] 触发:', { 
+    hasData: !!newData, 
+    initialized,
+    itineraryCount: newData?.itinerary?.length || 0 
+  })
+  
+  if (newData && initialized) {
+    console.log('数据和地图均已就绪，正在同步 itineraryList...')
     itineraryList.value = newData.itinerary.map(item => ({
       ...item,
       travel_mode: item.travel_mode || 'driving'
     }))
     await updateMap()
+  } else if (newData && !initialized) {
+    console.log('已有数据但地图尚未初始化，等待初始化后自动重绘')
+    // 即使地图未就绪，也可以先同步侧边栏数据
+    itineraryList.value = newData.itinerary.map(item => ({
+      ...item,
+      travel_mode: item.travel_mode || 'driving'
+    }))
   }
-}, { deep: true })
+}, { deep: true, immediate: true })
 
-onMounted(() => {
-  initMap()
+onMounted(async () => {
+  // 确保 DOM 已完全渲染
+  await nextTick()
+  await initMap()
 })
 
 onUnmounted(() => {
-  if (map) {
-    map.destroy()
+  if (map.value) {
+    map.value.destroy()
   }
 })
 </script>

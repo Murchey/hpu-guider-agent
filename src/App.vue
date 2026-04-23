@@ -22,7 +22,7 @@
       </el-tab-pane>
       
       <el-tab-pane label="地图规划" name="mapPlanning">
-        <MapPlanningPage @navigate="handleNavigate" />
+        <MapPlanningPage :active-tab="activeName" @navigate="handleNavigate" />
       </el-tab-pane>
       
       <el-tab-pane label="设置" name="settingPage">
