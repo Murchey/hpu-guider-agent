@@ -45,6 +45,17 @@
                 </div>
               </div>
               <div v-else class="message-text" v-html="msg.role === 'assistant' ? formatAssistantMessage(msg.content) : formatMessage(msg.content)"></div>
+              <div v-if="msg.role === 'assistant' && hasMapData(msg.content)" class="map-action-wrapper">
+                <el-button 
+                  type="success" 
+                  size="small" 
+                  round 
+                  :icon="Picture"
+                  @click="goToMap(msg.content)"
+                >
+                  转到地图
+                </el-button>
+              </div>
             </el-card>
             <div v-if="editingIndex !== index" class="message-tools">
               <el-tooltip content="复制" placement="bottom">
@@ -300,8 +311,17 @@ const props = defineProps<{
   activeTab?: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'navigate', tabName: string): void
+}>()
+
 const chatStore = useChatStore()
 const messages = computed(() => chatStore.currentSession?.messages || [])
+
+// 监听消息变化，自动滚动到底部
+watch(messages, () => {
+  scrollToBottom()
+}, { deep: true })
 
 const inputText = ref('')
 const isLoading = ref(false)
@@ -577,7 +597,37 @@ const formatMessage = (text: string): string => {
 
 const formatAssistantMessage = (text: string): string => {
   if (!text) return ''
-  return md.render(text)
+  // 移除地图数据标签后再渲染，避免显示原始标签
+  const cleanText = text.replace(/\[MAP_DATA\][\s\S]*?\[\/MAP_DATA\]/g, '').trim()
+  return md.render(cleanText)
+}
+
+const hasMapData = (text: string) => {
+  return /\[MAP_DATA\][\s\S]*?\[\/MAP_DATA\]/.test(text)
+}
+
+const goToMap = (text: string) => {
+  const match = text.match(/\[MAP_DATA\]([\s\S]*?)\[\/MAP_DATA\]/)
+  if (match) {
+    try {
+      let rawJson = match[1].trim()
+      
+      // 1. 移除可能存在的 Markdown 代码块包裹
+      if (rawJson.includes('```')) {
+        rawJson = rawJson.replace(/```[a-z]*\n?/gi, '').replace(/\n?```/gi, '').trim()
+      }
+      
+      // 2. 移除可能的非法字符（如末尾的多余逗号或文字）
+      rawJson = rawJson.replace(/,(\s*[}\]])/g, '$1') // 移除末尾逗号
+      
+      const mapData = JSON.parse(rawJson)
+      chatStore.currentMapData = mapData
+      emit('navigate', 'mapPlanning')
+    } catch (e) {
+      console.error('解析地图数据失败:', e, '\n原始数据:', match[1])
+      ElMessage.error('解析地图数据失败，请检查 AI 输出格式')
+    }
+  }
 }
 
 const handleNewLine = () => {
@@ -976,6 +1026,7 @@ onMounted(async () => {
   checkAndSendInitialPrompt()
   checkAndSendUserProfile()
   checkAndSendSocialRequest()
+  checkAndSendMapConfirm()
 })
 
 onUnmounted(() => {
@@ -988,8 +1039,32 @@ watch(() => props.activeTab, (newTab) => {
     checkAndSendInitialPrompt()
     checkAndSendUserProfile()
     checkAndSendSocialRequest()
+    checkAndSendMapConfirm()
   }
 })
+
+const checkAndSendMapConfirm = () => {
+  const pendingConfirm = localStorage.getItem('pending-map-confirm')
+  if (pendingConfirm) {
+    sendMapConfirmWithRetry(pendingConfirm)
+  }
+}
+
+const sendMapConfirmWithRetry = async (message: string) => {
+  const maxRetries = 3
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800 + i * 500))
+      await handleSendHidden(message)
+      localStorage.removeItem('pending-map-confirm')
+      console.log('行程确认消息发送成功')
+      return true
+    } catch (error) {
+      console.error(`发送行程确认消息失败，第 ${i + 1} 次尝试:`, error)
+    }
+  }
+  return false
+}
 
 const checkAndSendInitialPrompt = () => {
   const pendingPrompt = localStorage.getItem('pending-initial-prompt')
@@ -1169,6 +1244,14 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.map-action-wrapper {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--el-border-color-lighter);
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {

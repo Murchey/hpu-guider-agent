@@ -14,9 +14,22 @@ interface ChatSession {
   createdAt: number
 }
 
+interface MapData {
+  itinerary: Array<{
+    id: string
+    name: string
+    type: string
+    coordinates: { lng: number; lat: number }
+    suggested_duration: number
+    travel_mode?: string
+    description: string
+  }>
+}
+
 export const useChatStore = defineStore('chat', () => {
   const sessions = ref<ChatSession[]>([])
   const currentSessionId = ref<string | null>(null)
+  const currentMapData = ref<MapData | null>(null)
 
   // 从 localStorage 加载数据
   const loadSessions = () => {
@@ -54,6 +67,7 @@ export const useChatStore = defineStore('chat', () => {
     sessions.value.unshift(newSession)
     currentSessionId.value = newId
     currentSession.value = newSession
+    currentMapData.value = null
     return newSession
   }
 
@@ -77,6 +91,17 @@ export const useChatStore = defineStore('chat', () => {
           currentSession.value.title = firstUserMsg.content.slice(0, 20) + (firstUserMsg.content.length > 20 ? '...' : '')
         }
       }
+    }
+  }
+
+  // 模拟添加单条消息 (供测试使用)
+  const invokeSimulatedAiResponse = (content: string) => {
+    if (!currentSession.value) {
+      createNewChat()
+    }
+    if (currentSession.value) {
+      // 显式替换数组以确保触发响应式更新
+      currentSession.value.messages = [...currentSession.value.messages, { role: 'assistant', content }]
     }
   }
 
@@ -124,6 +149,7 @@ export const useChatStore = defineStore('chat', () => {
     sessions.value = []
     currentSessionId.value = null
     currentSession.value = null
+    currentMapData.value = null
   }
 
   // 初始化加载
@@ -137,9 +163,11 @@ export const useChatStore = defineStore('chat', () => {
     sessions,
     currentSessionId,
     currentSession,
+    currentMapData,
     createNewChat,
     switchChat,
     updateMessages,
+    invokeSimulatedAiResponse,
     deleteMessage,
     editMessageAndTruncate,
     deleteChat,

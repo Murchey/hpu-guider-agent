@@ -79,12 +79,12 @@
       </div>
     </el-card>
 
-    <!-- 新增：初始化提示词配置卡片 -->
+    <!-- 合并后的：对话高级设置与模拟调试卡片 -->
     <el-card class="settings-card shadow-sm prompt-card">
       <template #header>
         <div class="card-header">
           <el-icon><ChatDotRound /></el-icon>
-          <span>对话高级设置</span>
+          <span>对话高级设置与调试</span>
         </div>
       </template>
       <div class="tips">
@@ -98,15 +98,17 @@
               @change="saveModePrefixSetting"
             />
           </div>
-          <p class="prompt-hint" style="text-align: left; margin-top: 4px;">开启后，每次发送消息会自动附加如“model：智能导游 工作模式（task_type）：互动问答”等前置内容。</p>
+          <p class="prompt-hint" style="text-align: left; margin-top: 4px;">开启后，每次发送消息会自动附加工作模式前置内容。</p>
         </div>
-        <div class="api-item" style="margin-top: 15px;">
-          <span class="label">预设提示词 (System Prompt)</span>
+        
+        <el-divider border-style="dashed">系统提示词 (System Prompt)</el-divider>
+        
+        <div class="api-item">
           <el-input
             v-model="systemPrompt"
             type="textarea"
             :rows="4"
-            placeholder="输入初始化提示词，点击下方按钮发送..."
+            placeholder="输入初始化提示词..."
           />
         </div>
         <div class="api-item save-action">
@@ -115,7 +117,24 @@
             发送初始化提示词到 AI
           </el-button>
         </div>
-        <p class="prompt-hint">点击后将自动跳转至对话页并发送上述内容</p>
+
+        <el-divider border-style="dashed">AI 消息模拟 (测试专用)</el-divider>
+        
+        <p class="prompt-hint" style="text-align: left; margin-bottom: 12px;">用于测试前端对协议（如 [MAP_DATA], [SCENE_DATA]）的解析效果。</p>
+        <div class="api-item">
+          <el-input
+            v-model="simulatedAiContent"
+            type="textarea"
+            :rows="4"
+            placeholder="输入模拟回复内容，包含协议标签测试效果..."
+          />
+        </div>
+        <div class="api-item save-action">
+          <el-button type="info" class="save-btn" @click="sendSimulatedAiMessage">
+            <el-icon><Tools /></el-icon>
+            立即模拟 AI 回复并跳转
+          </el-button>
+        </div>
       </div>
     </el-card>
 
@@ -124,11 +143,40 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
-import { Setting, Refresh, Edit, ChatDotRound, Promotion } from '@element-plus/icons-vue'
+import { Setting, Refresh, Edit, ChatDotRound, Promotion, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useChatStore } from '../stores/chatStore'
 
+const emit = defineEmits(['navigate'])
+const chatStore = useChatStore()
 const showCustomSettings = ref(false)
 const enableModePrefix = ref(true)
+
+const simulatedAiContent = ref('')
+
+const sendSimulatedAiMessage = () => {
+  const store = chatStore as any
+  console.log('--- 调试 Pinia Store ---')
+  console.log('Store 对象:', store)
+  console.log('所有可用键名:', Object.keys(store))
+  
+  if (typeof store.invokeSimulatedAiResponse !== 'function') {
+    console.error('错误: invokeSimulatedAiResponse 未在 store 中定义。')
+    ElMessage.error('系统核心组件版本不一致，请按 Ctrl+F5 强制刷新浏览器缓存')
+    return
+  }
+
+  if (!simulatedAiContent.value.trim()) {
+    ElMessage.warning('请输入要模拟的 AI 内容')
+    return
+  }
+  
+  store.invokeSimulatedAiResponse(simulatedAiContent.value)
+  simulatedAiContent.value = ''
+  
+  emit('navigate', 'aiDialogue')
+  ElMessage.success('模拟成功')
+}
 
 const saveModePrefixSetting = (val: boolean) => {
   localStorage.setItem('enable-mode-prefix', String(val))
@@ -201,8 +249,6 @@ const systemPrompt = ref(`## 1. 角色定义
 > 
 > [SCENE_DATA]{"description": "讲解完毕，您还需要我做什么？", "btn1": "开始路线导航", "btn2": "查看美食推荐", "btn3": "咨询门票政策"}[/SCENE_DATA]
 `)
-
-const emit = defineEmits(['navigate'])
 
 const sendInitialPrompt = () => {
   if (!systemPrompt.value.trim()) {

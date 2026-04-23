@@ -30,3 +30,12 @@ declare module '*.svg' {
   const src: string
   export default src
 }
+
+interface ImportMetaEnv {
+  readonly VITE_AMAP_KEY: string
+  readonly VITE_AMAP_SECURITY_CODE: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

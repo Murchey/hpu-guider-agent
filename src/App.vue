@@ -18,7 +18,11 @@
       </el-tab-pane>
       
       <el-tab-pane label="AI对话" name="aiDialogue">
-        <AiDialoguePage :active-tab="activeName" />
+        <AiDialoguePage :active-tab="activeName" @navigate="handleNavigate" />
+      </el-tab-pane>
+      
+      <el-tab-pane label="地图规划" name="mapPlanning">
+        <MapPlanningPage @navigate="handleNavigate" />
       </el-tab-pane>
       
       <el-tab-pane label="设置" name="settingPage">
@@ -34,6 +38,7 @@ import { ref, onMounted } from 'vue'
 import type { TabsPaneContext } from 'element-plus'
 import IndexPage from './components/IndexPage.vue'
 import AiDialoguePage from './components/AiDialoguePage.vue'
+import MapPlanningPage from './components/MapPlanningPage.vue'
 import SettingPage from './components/SettingPage.vue'
 
 const activeName = ref('indexPage')
