@@ -116,6 +116,7 @@
 
         <div class="sidebar-footer" v-if="itineraryList.length > 0">
           <el-button type="primary" class="confirm-btn" @click="handleConfirm">发送并确认行程</el-button>
+          <el-button type="success" class="open-map-btn" @click="openAmapApp" style="margin-top: 12px; margin-left: 0;">在地图APP中打开</el-button>
         </div>
       </div>
       
@@ -838,6 +839,42 @@ const handleConfirm = () => {
   emit('navigate', 'aiDialogue')
 }
 
+// 唤起高德地图
+const openAmapApp = () => {
+  if (itineraryList.value.length < 2) {
+    ElMessage.warning('至少需要两个地点才能规划路线')
+    return
+  }
+
+  const start = itineraryList.value[0]
+  const end = itineraryList.value[itineraryList.value.length - 1]
+  const waypoints = itineraryList.value.slice(1, -1)
+  
+  // 组装途经点字符串（如果存在）
+  let waypointsStr = ''
+  if (waypoints.length > 0) {
+    waypointsStr = '&pid=' + waypoints.map(wp => `${wp.coordinates.lat},${wp.coordinates.lng},${encodeURIComponent(wp.name)}`).join(';')
+  }
+  
+  // 构建高德地图 URI
+  // URI 规范参考: https://lbs.amap.com/api/amap-mobile/guide/android/route
+  const schemeUrl = `amapuri://route/plan/?dlat=${end.coordinates.lat}&dlon=${end.coordinates.lng}&dname=${encodeURIComponent(end.name)}&slat=${start.coordinates.lat}&slon=${start.coordinates.lng}&sname=${encodeURIComponent(start.name)}${waypointsStr}&dev=0&t=0`
+  
+  // Web 端高德地图兜底链接
+  const webUrl = `https://uri.amap.com/navigation?from=${start.coordinates.lng},${start.coordinates.lat},${encodeURIComponent(start.name)}&to=${end.coordinates.lng},${end.coordinates.lat},${encodeURIComponent(end.name)}&mode=car&policy=1&src=mypage&coordinate=gaode&callnative=1`
+  
+  // 尝试打开 APP，失败则打开网页版
+  const iframe = document.createElement('iframe')
+  iframe.src = schemeUrl
+  iframe.style.display = 'none'
+  document.body.appendChild(iframe)
+  
+  setTimeout(() => {
+    document.body.removeChild(iframe)
+    window.open(webUrl, '_blank')
+  }, 1000)
+}
+
 // 监听数据和初始化状态，确保在两者都就绪时自动触发更新
 watch([() => chatStore.currentMapData, isMapInitialized], async ([newData, initialized]) => {
   console.log('watch [currentMapData, isMapInitialized] 触发:', { 
@@ -1186,6 +1223,10 @@ html.dark .map-legend {
 }
 
 .confirm-btn {
+  width: 100%;
+}
+
+.open-map-btn {
   width: 100%;
 }
 
