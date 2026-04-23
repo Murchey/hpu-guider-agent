@@ -32,8 +32,31 @@
               />
             </div>
             <el-card class="message-card" :class="msg.role">
-              <div class="message-text" v-html="msg.role === 'assistant' ? formatAssistantMessage(msg.content) : formatMessage(msg.content)"></div>
+              <div v-if="editingIndex === index" class="message-edit-area">
+                <el-input
+                  v-model="editingText"
+                  type="textarea"
+                  :autosize="{ minRows: 1, maxRows: 10 }"
+                  class="edit-input"
+                />
+                <div class="edit-actions">
+                  <el-button size="small" @click="cancelEdit">取消</el-button>
+                  <el-button size="small" type="primary" @click="submitEdit(index)">提交并重发</el-button>
+                </div>
+              </div>
+              <div v-else class="message-text" v-html="msg.role === 'assistant' ? formatAssistantMessage(msg.content) : formatMessage(msg.content)"></div>
             </el-card>
+            <div v-if="editingIndex !== index" class="message-tools">
+              <el-tooltip content="复制" placement="bottom">
+                <el-button link :icon="CopyDocument" @click.stop="handleCopy(msg.content)" />
+              </el-tooltip>
+              <el-tooltip v-if="msg.role === 'user'" content="修改" placement="bottom">
+                <el-button link :icon="Edit" @click.stop="startEdit(index, msg.content)" />
+              </el-tooltip>
+              <el-tooltip content="删除" placement="bottom">
+                <el-button link :icon="DeleteIcon" @click.stop="handleDeleteMessage(index)" />
+              </el-tooltip>
+            </div>
           </div>
         </div>
         
@@ -52,6 +75,16 @@
       
       <div class="chat-input">
         <div class="chat-toolbar">
+          <el-button
+            class="chat-toolbar-history"
+            type="info"
+            plain
+            size="small"
+            @click="drawer = true"
+          >
+            <el-icon><Memo /></el-icon>
+            对话历史
+          </el-button>
           <span>工作模式：</span>
             <div class="mode-change-btn">
               <el-segmented v-model="modeValue" :options="modeOptions" />
@@ -197,16 +230,65 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 对话历史抽屉 -->
+    <el-drawer
+      v-model="drawer"
+      title="对话历史"
+      :direction="direction"
+      size="300px"
+    >
+      <div class="drawer-content">
+        <div class="new-chat-container">
+          <el-button type="primary" plain class="new-chat-btn" :icon="Plus" @click="handleNewChat">
+            新建文途智行对话
+          </el-button>
+        </div>
+        <el-divider content-position="center">历史记录</el-divider>
+        <div class="history-list">
+          <div 
+            v-for="session in chatStore.sessions" 
+            :key="session.id"
+            class="history-item"
+            :class="{ active: chatStore.currentSessionId === session.id }"
+            @click="handleSelectSession(session.id)"
+          >
+            <div class="history-item-content">
+              <el-icon><ChatDotRound /></el-icon>
+              <span class="history-item-title">{{ session.title }}</span>
+            </div>
+            <div class="history-item-actions">
+              <el-button 
+                type="primary" 
+                link 
+                :icon="Edit" 
+                class="history-action-btn"
+                @click.stop="handleRenameSession(session.id, session.title)"
+              />
+              <el-button 
+                type="danger" 
+                link 
+                :icon="CircleClose" 
+                class="history-action-btn"
+                @click.stop="handleDeleteSession(session.id)"
+              />
+            </div>
+          </div>
+          <el-empty v-if="chatStore.sessions.length === 0" description="暂无对话历史" :image-size="80" />
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
-import { Loading, User, ChatDotRound, Picture, CircleClose } from '@element-plus/icons-vue'
+import { Loading, User, ChatDotRound, Picture, CircleClose, Memo, Plus, CopyDocument, Edit, Delete as DeleteIcon } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import MarkdownIt from 'markdown-it'
 import agentIcon from '../assets/agent_icon.jpg'
+import { useChatStore } from '../stores/chatStore'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -218,10 +300,58 @@ const props = defineProps<{
   activeTab?: string
 }>()
 
-const messages = ref<Message[]>([])
+const chatStore = useChatStore()
+const messages = computed(() => chatStore.currentSession?.messages || [])
+
 const inputText = ref('')
 const isLoading = ref(false)
 const messagesRef = ref<HTMLElement | null>(null)
+
+// 消息编辑相关
+const editingIndex = ref<number | null>(null)
+const editingText = ref('')
+
+const startEdit = (index: number, content: string) => {
+  editingIndex.value = index
+  editingText.value = content
+}
+
+const cancelEdit = () => {
+  editingIndex.value = null
+  editingText.value = ''
+}
+
+const submitEdit = async (index: number) => {
+  const text = editingText.value.trim()
+  if (!text || isLoading.value) return
+  
+  // 修改并截断对话
+  chatStore.editMessageAndTruncate(index, text)
+  editingIndex.value = null
+  editingText.value = ''
+  
+  // 重新发送
+  await sendMessage(text, true)
+}
+
+const handleCopy = (content: string) => {
+  navigator.clipboard.writeText(content).then(() => {
+    ElMessage.success('已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制失败')
+  })
+}
+
+const handleDeleteMessage = (index: number) => {
+  ElMessageBox.confirm('确定要删除这条消息吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    chatStore.deleteMessage(index)
+    ElMessage.success('消息已删除')
+  }).catch(() => {})
+}
 
 // 图片上传相关
 const uploadedImageUrl = ref('')
@@ -328,6 +458,10 @@ const sceneButtons = ref({
   btn2: '',
   btn3: ''
 })
+
+// 侧边栏抽屉状态
+const drawer = ref(false)
+const direction = ref('ltr')
 
 // 多选弹窗状态
 const selectDialogVisible = ref(false)
@@ -478,20 +612,55 @@ const handleSelectConfirm = () => {
 const clearChat = () => {
   if (messages.value.length === 0) return
   
-  ElMessageBox.confirm('确定要清空所有聊天记录吗？', '提示', {
+  ElMessageBox.confirm('确定要清空当前聊天记录吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    messages.value = []
+    chatStore.updateMessages([])
     ElMessage.success('聊天记录已清空')
   }).catch(() => {})
+}
+
+// 侧边栏操作
+const handleNewChat = () => {
+  chatStore.createNewChat()
+  drawer.value = false
+  ElMessage.success('已开启新对话')
+}
+
+const handleSelectSession = (id: string) => {
+  chatStore.switchChat(id)
+  drawer.value = false
+  scrollToBottom()
+}
+
+const handleRenameSession = (id: string, oldTitle: string) => {
+  ElMessageBox.prompt('请输入新的对话标题', '重命名对话', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputValue: oldTitle,
+    inputPattern: /\S+/,
+    inputErrorMessage: '标题不能为空'
+  }).then(({ value }) => {
+    chatStore.renameChat(id, value)
+    ElMessage.success('重命名成功')
+  }).catch(() => {})
+}
+
+const handleDeleteSession = (id: string) => {
+  chatStore.deleteChat(id)
 }
 
 let currentAbortController: AbortController | null = null
 
 const sendMessage = async (text: string, showUserMessage: boolean) => {
   if (!text || isLoading.value) return
+
+  // 确保有一个活跃的会话
+  if (!chatStore.currentSession) {
+    chatStore.createNewChat()
+  }
 
   // 每次发送前重新加载一次设置，确保读取到最新的 API Key
   loadSettings()
@@ -526,18 +695,22 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
   uploadedImageUrl.value = ''
   uploadedFileId.value = ''
 
+  const newMessages = [...messages.value]
+
   if (showUserMessage) {
-    messages.value.push({ 
+    newMessages.push({ 
       role: 'user', 
       content: text,
       imageUrl: currentImageUrl 
     })
+    chatStore.updateMessages(newMessages)
     await scrollToBottom()
   }
 
   // 先在列表中推入一个空的助手回复，用于流式更新
-  messages.value.push({ role: 'assistant', content: '' })
-  const assistantMsgIndex = messages.value.length - 1
+  newMessages.push({ role: 'assistant', content: '' })
+  chatStore.updateMessages(newMessages)
+  const assistantMsgIndex = newMessages.length - 1
   
   isLoading.value = true
 
@@ -625,7 +798,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
                 const delta = data.content || (data.message && data.message.content)
                 if (delta) {
                   aiContent += delta
-                  messages.value[assistantMsgIndex].content = aiContent
+                  newMessages[assistantMsgIndex].content = aiContent
+                  chatStore.updateMessages(newMessages)
                   scrollToBottom()
                 }
               } else if (currentEvent === 'error' || data.event === 'error') {
@@ -703,7 +877,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
             const delta = data.choices?.[0]?.delta?.content || ''
             if (delta) {
               aiContent += delta
-              messages.value[assistantMsgIndex].content = aiContent
+              newMessages[assistantMsgIndex].content = aiContent
+              chatStore.updateMessages(newMessages)
               scrollToBottom()
             }
           } catch (e) {
@@ -715,7 +890,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
 
     if (!aiContent) {
       aiContent = 'AI 未返回有效回复'
-      messages.value[assistantMsgIndex].content = aiContent
+      newMessages[assistantMsgIndex].content = aiContent
+      chatStore.updateMessages(newMessages)
     }
 
     // 处理解析场景推荐数据 [SCENE_DATA]{...}[/SCENE_DATA]
@@ -732,7 +908,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
           btn3: parsedData.btn3 || ''
         }
         sceneDialogVisible.value = true
-        messages.value[assistantMsgIndex].content = aiContent.replace(/\[SCENE_DATA\][\s\S]*?\[\/SCENE_DATA\]/, '').trim()
+        newMessages[assistantMsgIndex].content = aiContent.replace(/\[SCENE_DATA\][\s\S]*?\[\/SCENE_DATA\]/, '').trim()
+        chatStore.updateMessages(newMessages)
       } catch (e) {
         console.error('解析 SCENE_DATA 失败:', e)
       }
@@ -748,7 +925,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
           selectDescription.value = parsedData.description || ''
           selectedValues.value = []
           selectDialogVisible.value = true
-          messages.value[assistantMsgIndex].content = aiContent.replace(/\[SELECT_DATA\][\s\S]*?\[\/SELECT_DATA\]/, '').trim()
+          newMessages[assistantMsgIndex].content = aiContent.replace(/\[SELECT_DATA\][\s\S]*?\[\/SELECT_DATA\]/, '').trim()
+          chatStore.updateMessages(newMessages)
         }
       } catch (e) {
         console.error('解析 SELECT_DATA 失败:', e)
@@ -760,7 +938,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     if (errorMsg === 'Failed to fetch' || error?.name === 'TypeError') {
       errorMsg = '网络连接中断，请检查网络设置或尝试重新发送。'
     }
-    messages.value[assistantMsgIndex].content = `❌ 请求失败：${errorMsg}\n\n请检查设置或网络。`
+    newMessages[assistantMsgIndex].content = `❌ 请求失败：${errorMsg}\n\n请检查设置或网络。`
+    chatStore.updateMessages(newMessages)
   } finally {
     isLoading.value = false
     if (currentAbortController) {
@@ -957,6 +1136,39 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
 .message-content {
   flex: 1;
   max-width: 80%;
+  position: relative;
+}
+
+.message-tools {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+  padding: 0 4px;
+}
+
+.message-item:hover .message-tools {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-item.user .message-tools {
+  justify-content: flex-end;
+}
+
+.message-edit-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @media (max-width: 768px) {
@@ -1070,6 +1282,93 @@ const sendUserProfileWithRetry = async (prompt: string, formData: any) => {
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.new-chat-container {
+  padding: 0 16px 16px 16px;
+}
+
+.new-chat-btn {
+  width: 100%;
+  height: 40px;
+  font-weight: bold;
+}
+
+.toolbar-label {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background-color: var(--el-fill-color-light);
+  border: 1px solid transparent;
+}
+
+.history-item:hover {
+  background-color: var(--el-fill-color);
+}
+
+.history-item.active {
+  background-color: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary);
+}
+
+.history-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-title {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--el-text-color-primary);
+}
+
+.history-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.history-item:hover .history-item-actions {
+  opacity: 1;
+}
+
+.history-action-btn {
+  padding: 4px;
+}
+
+.drawer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .chat-toolbar-upload :deep(.el-upload) {
