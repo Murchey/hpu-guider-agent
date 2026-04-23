@@ -5,26 +5,39 @@
         <div class="sidebar-header">
           <h3>行程路线规划</h3>
           <div v-if="itineraryList.length > 0" class="compact-itinerary">
-            <div v-for="(item, index) in itineraryList" :key="item.id" class="compact-item" :class="{ 'is-departure': item.type === 'departure' }">
-              <span class="compact-name">
-                <el-icon v-if="item.type === 'departure'" class="departure-icon"><LocationFilled /></el-icon>
-                {{ index + 1 }}. {{ item.name }}
-              </span>
-              <div class="compact-controls">
-                <el-button 
-                  link
-                  size="small" 
-                  :icon="CaretTop" 
-                  :disabled="index === 0 || (index === 1 && itineraryList[0].type === 'departure')"
-                  @click="moveUp(index)"
-                />
-                <el-button 
-                  link
-                  size="small" 
-                  :icon="CaretBottom" 
-                  :disabled="index === itineraryList.length - 1 || item.type === 'departure'"
-                  @click="moveDown(index)"
-                />
+            <div v-for="(item, index) in itineraryList" :key="item.id" class="compact-item-wrapper">
+              <div class="compact-item" :class="{ 'is-departure': item.type === 'departure' }">
+                <span class="compact-name">
+                  <el-icon v-if="item.type === 'departure'" class="departure-icon"><LocationFilled /></el-icon>
+                  {{ index + 1 }}. {{ item.name }}
+                </span>
+                <div class="compact-controls">
+                  <el-button 
+                    link
+                    size="small" 
+                    :icon="CaretTop" 
+                    :disabled="index === 0 || (index === 1 && itineraryList[0].type === 'departure')"
+                    @click="moveUp(index)"
+                  />
+                  <el-button 
+                    link
+                    size="small" 
+                    :icon="CaretBottom" 
+                    :disabled="index === itineraryList.length - 1 || item.type === 'departure'"
+                    @click="moveDown(index)"
+                  />
+                </div>
+              </div>
+              <!-- 添加紧凑列表中的出行描述 -->
+              <div v-if="index < itineraryList.length - 1 && (travelTimes[index] || segmentDetails[index])" class="compact-travel-info">
+                <el-icon class="mode-icon">
+                  <Van v-if="item.travel_mode === 'driving' || !item.travel_mode" />
+                  <Guide v-else-if="item.travel_mode === 'walking'" />
+                  <Promotion v-else-if="item.travel_mode === 'transit'" />
+                  <Bicycle v-else-if="item.travel_mode === 'cycling'" />
+                </el-icon>
+                <span class="text">{{ getTravelTime(index) }}</span>
+                <span v-if="segmentDetails[index]" class="details">({{ segmentDetails[index] }})</span>
               </div>
             </div>
           </div>
@@ -80,7 +93,10 @@
                         <el-icon v-else-if="element.travel_mode === 'transit'"><Promotion /></el-icon>
                         <el-icon v-else-if="element.travel_mode === 'cycling'"><Bicycle /></el-icon>
                         <el-icon v-else><Van /></el-icon>
-                        <span>{{ getTravelTime(index) }}</span>
+                        <div class="mode-text">
+                          <span class="time">{{ getTravelTime(index) }}</span>
+                          <span v-if="segmentDetails[index]" class="details">{{ segmentDetails[index] }}</span>
+                        </div>
                       </div>
                       <template #dropdown>
                         <el-dropdown-menu>
@@ -103,7 +119,24 @@
         </div>
       </div>
       
-      <div class="map-container" id="map-container"></div>
+      <div class="map-container-wrapper">
+        <div class="map-container" id="map-container"></div>
+        <div class="map-legend" v-if="itineraryList.length > 0">
+          <div class="legend-item" v-for="(color, mode) in modeColors" :key="mode">
+            <span class="legend-line" :style="{ backgroundColor: color }"></span>
+            <el-icon class="legend-icon">
+              <Van v-if="mode === 'driving'" />
+              <Guide v-else-if="mode === 'walking'" />
+              <Promotion v-else-if="mode === 'transit'" />
+              <Bicycle v-else-if="mode === 'cycling'" />
+              <LocationFilled v-else-if="mode === 'railway'" />
+            </el-icon>
+            <span class="legend-text">
+              {{ mode === 'driving' ? '驾车' : mode === 'walking' ? '步行' : mode === 'transit' ? '公交' : mode === 'cycling' ? '骑行' : '火车' }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -113,6 +146,7 @@ import { ref, onMounted, onUnmounted, watch, computed, shallowRef, nextTick } fr
 import { VueDraggable } from 'vue-draggable-plus'
 import { Van, CaretTop, CaretBottom, LocationFilled, Bicycle, Guide, Bicycle as CyclingIcon, Promotion } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
+import axios from 'axios'
 import { useChatStore } from '../stores/chatStore'
 import { ElMessage } from 'element-plus'
 
@@ -127,11 +161,69 @@ const emit = defineEmits<{
 const chatStore = useChatStore()
 const itineraryList = ref<any[]>([])
 const travelTimes = ref<Record<number, string>>({})
+const segmentDetails = ref<Record<number, string>>({})
+
+// 定义模式对应的颜色 (采用更鲜明、对比度更高的色彩方案)
+const modeColors: Record<string, string> = {
+  driving: '#0084FF', // 鲜蓝色
+  walking: '#13C2C2', // 青绿色
+  transit: '#722ED1', // 紫色 (公共交通常用色)
+  cycling: '#FA8C16', // 橙色 (充满活力的骑行色)
+  railway: '#F5222D'  // 红色 (高铁/火车常用色)
+}
 
 // 使用 shallowRef 避免 Vue 对 SDK 内部对象进行 Proxy 包装，导致内部调用失败
 const AMapInstance = shallowRef<any>(null)
 const map = shallowRef<any>(null)
 const calculators = shallowRef<Record<string, any>>({})
+const geocoder = shallowRef<any>(null)
+
+/**
+ * 获取两个坐标点之间的弧形路径（模拟高铁/航线）
+ */
+const getArcPath = (start: any, end: any, steps = 50) => {
+  const path = []
+  const startLng = start.getLng()
+  const startLat = start.getLat()
+  const endLng = end.getLng()
+  const endLat = end.getLat()
+
+  // 计算距离
+  const distance = Math.sqrt(Math.pow(endLng - startLng, 2) + Math.pow(endLat - startLat, 2))
+  // 弧度高度系数，长途可以稍微平缓一点
+  const curveHeight = distance * 0.12
+
+  for (let i = 0; i <= steps; i++) {
+    const ratio = i / steps
+    let lng = startLng + (endLng - startLng) * ratio
+    let lat = startLat + (endLat - startLat) * ratio
+    
+    // 添加正弦波偏移，模拟弧度
+    lat += Math.sin(ratio * Math.PI) * curveHeight 
+    path.push(new AMapInstance.value.LngLat(lng, lat))
+  }
+  return path
+}
+
+// 辅助函数：根据坐标获取城市名称
+const getCityName = (lnglat: any): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!geocoder.value) {
+      resolve('洛阳') // 默认兜底
+      return
+    }
+    geocoder.value.getAddress(lnglat, (status: string, result: any) => {
+      if (status === 'complete' && result.regeocode) {
+        const component = result.regeocode.addressComponent
+        // 优先取 city，如果 city 为空（直辖市），则取 province
+        const cityName = component.city || component.province || '洛阳'
+        resolve(cityName)
+      } else {
+        resolve('洛阳')
+      }
+    })
+  })
+}
 
 // 监听 tab 切换，当切换到地图页时执行 resize
 watch(() => props.activeTab, (newTab) => {
@@ -150,16 +242,17 @@ const isMapInitialized = computed(() => {
   const hasMap = !!map.value
   const hasInstance = !!AMapInstance.value
   const hasDriving = !!calculators.value?.driving
+  const hasTransit = !!calculators.value?.transit
   
-  const isReady = hasMap && hasInstance && hasDriving
+  const isReady = hasMap && hasInstance && hasDriving && hasTransit
   
   if (!isReady) {
     console.log('地图初始化状态未就绪:', { 
       hasMap, 
       hasInstance, 
       hasDriving,
-      calculatorsExist: !!calculators.value,
-      drivingProp: calculators.value?.driving
+      hasTransit,
+      calculatorsExist: !!calculators.value
     })
   } else {
     console.log('地图初始化状态已就绪!')
@@ -210,18 +303,29 @@ const getTravelTime = (index: number) => {
 
 const initMap = async () => {
   console.log('开始执行 initMap...')
-  const amapKey = import.meta.env.VITE_AMAP_KEY
-  const securityCode = import.meta.env.VITE_AMAP_SECURITY_CODE
+  // 优先从 import.meta.env 读取，如果没有，提供兜底的测试 key（仅供演示/测试使用）
+  const amapKey = import.meta.env.VITE_AMAP_KEY || 'bd0e994a36acbf769cf428f8a1b10965'
+  const securityCode = import.meta.env.VITE_AMAP_SECURITY_CODE || '041b801bef278fb69682240d62c53a1d'
 
-  if (!amapKey || amapKey === '在此处填写您的KEY') {
+  if (!amapKey || amapKey === '在此处填写您的KEY' || amapKey.trim() === '') {
     ElMessage.warning('检测到高德地图 Key 未配置，请在根目录 .env 文件中配置真实的 Key 以启用地图功能。')
     return
   }
 
   try {
     // 设置安全密钥
-    window._AMapSecurityConfig = {
-      securityJsCode: securityCode,
+    if (securityCode && securityCode.trim() !== '') {
+      window._AMapSecurityConfig = {
+        securityJsCode: securityCode,
+      }
+    } else {
+      // 当没有配置 securityCode 时，可以通过配置 serviceHost 来让高德 SDK 走代理
+      // 在本地开发或无后端代理时，暂时删除此项。但是如果报错 USERKEY_PLAT_NOMATCH
+      // 说明您申请的 Web端(JS API) Key 是需要配合 SecurityCode 或者代理的。
+      // 作为备用方案，为了让纯 Web 服务 API Key 在地图 JS API 里也能“勉强”使用（不推荐，易失效），我们尝试强制清空安全配置：
+      window._AMapSecurityConfig = {
+        securityJsCode: '',
+      }
     }
 
     console.log('正在调用 AMapLoader.load...')
@@ -232,14 +336,18 @@ const initMap = async () => {
         'AMap.Driving',
         'AMap.Walking',
         'AMap.Transit',
+        'AMap.Transfer', // 增加备选插件
         'AMap.Riding',
         'AMap.Marker',
-        'AMap.Polyline'
+        'AMap.Polyline',
+        'AMap.InfoWindow',
+        'AMap.Geocoder'
       ]
     })
     console.log('AMapLoader.load 完成')
 
     AMapInstance.value = AMap
+    geocoder.value = new AMap.Geocoder()
 
     const container = document.getElementById('map-container')
     if (!container) {
@@ -261,6 +369,8 @@ const initMap = async () => {
     const tempCalculators: any = {}
     
     try {
+      console.log('AMap 实例中的可用属性/插件:', Object.keys(AMap).filter(key => key.includes('Driving') || key.includes('Walking') || key.includes('Transit') || key.includes('Transfer') || key.includes('Riding')))
+      
       if (AMap.Driving) {
         tempCalculators.driving = new AMap.Driving({ ...commonConfig })
         console.log('Driving 规划器就绪')
@@ -273,9 +383,27 @@ const initMap = async () => {
         console.log('Walking 规划器就绪')
       }
 
-      if (AMap.Transit) {
-        tempCalculators.transit = new AMap.Transit({ ...commonConfig, city: '洛阳' })
-        console.log('Transit 规划器就绪')
+      // 针对 Transit 的兼容性处理：优先使用 Transfer 构造器以更好地支持跨城规划
+      const TransitConstructor = AMap.Transfer || AMap.Transit
+      if (TransitConstructor) {
+        // 使用更明确的策略常量
+        const policy = AMap.TransferPolicy ? AMap.TransferPolicy.LEAST_TIME : (AMap.TransitPolicy ? AMap.TransitPolicy.LEAST_TIME : 0)
+        
+        tempCalculators.transit = new TransitConstructor({ 
+          ...commonConfig,
+          policy: policy
+        })
+        console.log(`Transit 规划器就绪 (使用 ${AMap.Transfer ? 'Transfer' : 'Transit'} 构造器, 策略: ${policy})`)
+      } else {
+        console.warn('初次尝试未找到 Transit/Transfer 插件，尝试动态加载...')
+        AMap.plugin(['AMap.Transfer'], () => {
+          if (AMap.Transfer) {
+            const policy = AMap.TransferPolicy ? AMap.TransferPolicy.LEAST_TIME : 0
+            tempCalculators.transit = new AMap.Transfer({ ...commonConfig, policy: policy })
+            calculators.value = { ...tempCalculators }
+            console.log('Transfer 规划器动态加载成功')
+          }
+        })
       }
 
       if (AMap.Riding) {
@@ -336,7 +464,7 @@ const updateMap = async () => {
     try {
       console.log(`开始执行 updateMap 重绘逻辑... 地点总数: ${itineraryList.value.length}`)
       if (itineraryList.value.length > 0) {
-        console.log('行程数据示例:', JSON.stringify(itineraryList.value[0]))
+        console.log('行程数据地点列表:', itineraryList.value.map(item => item.name).join(' -> '))
       }
       
       // 清除旧标记和旧路径
@@ -348,6 +476,9 @@ const updateMap = async () => {
       // 清除旧轨迹线
       polylines.forEach(p => p.setMap(null))
       polylines = []
+      
+      // 清理详细描述
+      segmentDetails.value = {}
 
       // 清除所有规划实例的内部状态
       if (calculators.value) {
@@ -356,17 +487,17 @@ const updateMap = async () => {
         })
       }
 
-    // 添加新标记
-    itineraryList.value.forEach((item, index) => {
-      const lng = Number(item.coordinates?.lng)
-      const lat = Number(item.coordinates?.lat)
-      
-      if (isNaN(lng) || isNaN(lat)) {
-        console.error(`地点 ${index + 1}: ${item.name} 坐标无效:`, item.coordinates)
-        return
-      }
+      // 添加新标记
+      itineraryList.value.forEach((item, index) => {
+        const lng = Number(item.coordinates?.lng)
+        const lat = Number(item.coordinates?.lat)
+        
+        if (isNaN(lng) || isNaN(lat)) {
+          console.error(`地点 ${index + 1}: ${item.name} 坐标无效:`, item.coordinates)
+          return
+        }
 
-      console.log(`正在创建标记: ${index + 1}. ${item.name} (${lng}, ${lat})`)
+        console.log(`正在创建标记: ${index + 1}. ${item.name} (${lng}, ${lat})`)
       const isDeparture = item.type === 'departure'
       
       try {
@@ -397,9 +528,9 @@ const updateMap = async () => {
       await drawSegments()
 
       // 全部绘制完成后再次缩放，包含路径
-      if (map.value && markers.length > 0) {
-        console.log('路径绘制完成，执行最终 setFitView')
-        map.value.setFitView()
+      if (map.value) {
+        console.log(`路径绘制完成，最终统计 -> 标记: ${markers.length}, 轨迹线: ${polylines.length}`)
+        map.value.setFitView(null, false, [60, 60, 60, 60]) // 增加边距，确保长途路径不被边缘遮挡
       }
     } catch (err) {
       console.error('更新地图过程中发生错误:', err)
@@ -407,127 +538,263 @@ const updateMap = async () => {
   }, 100)
 }
 
-// 定义模式对应的颜色
-const modeColors: Record<string, string> = {
-  driving: '#409EFF', // 蓝色
-  walking: '#67C23A', // 绿色
-  transit: '#E6A23C', // 橙色
-  cycling: '#909399'  // 灰色
-}
+// ----------------------------------------------------------------
+// 核心绘制逻辑
+// ----------------------------------------------------------------
 
 const drawSegments = async () => {
   if (itineraryList.value.length < 2 || !calculators.value.driving) return
 
   const AMap = AMapInstance.value
-  if (!AMap) return
+  if (!AMap || !map.value) return
+
+  console.log('开始执行 drawSegments 路径规划绘制...')
 
   // 逐段规划和绘制
   for (let i = 0; i < itineraryList.value.length - 1; i++) {
     const p1 = itineraryList.value[i]
     const p2 = itineraryList.value[i+1]
+    const mode = p1.travel_mode || 'driving'
+    
+    // 即使指定的规划器不存在，也进入 performSearch 尝试使用驾车模式兜底
+    // calculator 会在 performSearch 内部根据 currentMode 获取
 
     // 坐标校验
-    const lng1 = Number(p1.coordinates.lng)
-    const lat1 = Number(p1.coordinates.lat)
-    const lng2 = Number(p2.coordinates.lng)
-    const lat2 = Number(p2.coordinates.lat)
+    const lng1 = Number(p1.coordinates?.lng)
+    const lat1 = Number(p1.coordinates?.lat)
+    const lng2 = Number(p2.coordinates?.lng)
+    const lat2 = Number(p2.coordinates?.lat)
 
     if (isNaN(lng1) || isNaN(lat1) || isNaN(lng2) || isNaN(lat2)) {
-      console.error(`第 ${i+1} 段坐标无效:`, p1.coordinates, p2.coordinates)
+      console.error(`第 ${i+1} 段: 坐标无效`, { p1, p2 })
       travelTimes.value[i] = '坐标错误'
       continue
     }
 
-    const mode = p1.travel_mode || 'driving'
-    const calculator = calculators.value[mode]
-
-    if (!calculator) {
-      console.warn(`未找到模式 ${mode} 的规划器，跳过此段规划`)
-      continue
-    }
-
-    // 统一使用 LngLat 对象作为参数
     const start = new AMap.LngLat(lng1, lat1)
     const end = new AMap.LngLat(lng2, lat2)
 
-    await new Promise((resolve) => {
-      calculator.search(start, end, (status: string, result: any) => {
-        console.log(`第 ${i+1} 段规划状态 (${mode}):`, status)
+    let cleanCity1 = ''
+    let cleanCity2 = ''
+    if (mode === 'transit') {
+      const city1 = await getCityName(start)
+      const city2 = await getCityName(end)
+      // 兼容处理：移除“市”字后缀，高德某些版本对带“市”字的匹配更严格或不匹配
+      cleanCity1 = city1.replace(/市$/, '')
+      cleanCity2 = city2.replace(/市$/, '')
+      console.log(`第 ${i+1} 段: 公交规划城市检测 -> 起点: ${cleanCity1}, 终点: ${cleanCity2}`)
+    }
 
-        if (status === 'complete') {
-          let routeData: any = null
-          let path: any[] = []
+    // 内部规划函数，支持递归兜底
+    const performSearch = async (currentMode: string, isFallback = false): Promise<boolean> => {
+      const currentCalc = calculators.value[currentMode] || calculators.value.driving
+      
+      console.log(`第 ${i+1} 段: 发起请求 (${currentMode}${isFallback ? ' 兜底模式' : ''})...`)
 
-          // 1. 根据不同模式解析数据源
-          if (mode === 'transit' && result.plans && result.plans[0]) {
-            routeData = result.plans[0]
-            if (routeData.segments) {
-              routeData.segments.forEach((seg: any) => {
-                if (seg.transit && seg.transit.path) path.push(...seg.transit.path)
-                if (seg.walking && seg.walking.path) path.push(...seg.walking.path)
-              })
-            } else if (routeData.path) {
-              path = routeData.path
+      if (currentMode === 'transit') {
+        const amapWebKey = import.meta.env.VITE_AMAP_WEB_KEY || import.meta.env.VITE_AMAP_KEY || 'ebd8cfa25b1f6958d7a8b5488c1af02c'
+        const url = 'https://restapi.amap.com/v3/direction/transit/integrated'
+        
+        try {
+          const response = await axios.get(url, {
+            params: {
+              key: amapWebKey,
+              origin: `${lng1},${lat1}`,
+              destination: `${lng2},${lat2}`,
+              city: cleanCity1 || '洛阳',
+              cityd: cleanCity2 || '洛阳',
+              extensions: 'all'
             }
-          } else if (result.routes && result.routes[0]) {
-            routeData = result.routes[0]
-            if (routeData.path && routeData.path.length > 0) {
-              path = routeData.path
-            } else if (routeData.steps) {
-              routeData.steps.forEach((step: any) => {
-                if (step.path) path.push(...step.path)
+          })
+          
+          const data = response.data
+          if (data.status === '1' && data.route && data.route.transits && data.route.transits.length > 0) {
+            const transit = data.route.transits[0]
+            const segments = transit.segments || []
+            const details: string[] = []
+            
+            if (segments.length > 0) {
+              segments.forEach((seg: any) => {
+                let segPath: any[] = []
+                let isWalk = false
+                let lineName = ''
+
+                // Web API 返回的数据结构
+                const mode = seg.transit?.mode || seg.bus?.buslines?.[0]?.type || ''
+                
+                if (mode === 'TRAIN' || seg.railway) {
+                  const railway = seg.railway || seg.transit
+                  const trip = railway.trip || railway.name || railway.lines?.[0]?.name || '火车'
+                  const depStation = railway.departure_stop?.name || railway.departure_stop?.location || railway.lines?.[0]?.departure_stop?.name || ''
+                  const arrStation = railway.arrival_stop?.name || railway.arrival_stop?.location || railway.lines?.[0]?.arrival_stop?.name || ''
+                  const depTime = railway.departure_time || railway.lines?.[0]?.departure_time || ''
+                  const arrTime = railway.arrival_time || railway.lines?.[0]?.arrival_time || ''
+                  
+                  lineName = trip
+                  
+                  let fullTrainInfo = trip
+                  if (depStation || arrStation) {
+                    fullTrainInfo += ` (${depStation}${depTime ? ' ' + depTime : ''} → ${arrStation}${arrTime ? ' ' + arrTime : ''})`
+                  } else {
+                    fullTrainInfo += ` (${cleanCity1} → ${cleanCity2})`
+                  }
+                  details.push(fullTrainInfo)
+                  
+                  const rStartLoc = railway.departure_stop?.location ? railway.departure_stop.location.split(',').map(Number) : [lng1, lat1]
+                  const rEndLoc = railway.arrival_stop?.location ? railway.arrival_stop.location.split(',').map(Number) : [lng2, lat2]
+                  
+                  const rStart = new AMapInstance.value.LngLat(rStartLoc[0] || lng1, rStartLoc[1] || lat1)
+                  const rEnd = new AMapInstance.value.LngLat(rEndLoc[0] || lng2, rEndLoc[1] || lat2)
+                  
+                  // 使用模拟弧线
+                  segPath = getArcPath(rStart, rEnd)
+                  console.log(`第 ${i+1} 段: 使用模拟弧线绘制火车路径 -> ${lineName}`)
+                  
+                } else if (seg.bus && seg.bus.buslines && seg.bus.buslines.length > 0) {
+                  // 公交或地铁
+                  const busline = seg.bus.buslines[0]
+                  lineName = busline.name
+                  details.push(lineName)
+                  if (busline.polyline) {
+                    segPath = busline.polyline.split(';').map((p: string) => {
+                      const [lng, lat] = p.split(',').map(Number)
+                      return new AMapInstance.value.LngLat(lng || lng1, lat || lat1)
+                    })
+                  }
+                } else if (seg.walking && seg.walking.steps && seg.walking.steps.length > 0) {
+                  isWalk = true
+                  segPath = []
+                  seg.walking.steps.forEach((step: any) => {
+                    if (step.polyline) {
+                      step.polyline.split(';').forEach((p: string) => {
+                        const [lng, lat] = p.split(',').map(Number)
+                        segPath.push(new AMapInstance.value.LngLat(lng || lng1, lat || lat1))
+                      })
+                    }
+                  })
+                }
+
+                if (segPath.length > 0) {
+                  const polyline = new AMapInstance.value.Polyline({
+                    path: segPath,
+                    strokeColor: isWalk ? '#999' : (mode === 'SUBWAY' ? '#9013FE' : (mode === 'TRAIN' ? modeColors.railway : modeColors[currentMode] || modeColors.transit)),
+                    strokeWeight: isWalk ? 4 : 8,
+                    strokeStyle: isWalk ? 'dashed' : 'solid',
+                    strokeOpacity: isWalk ? 0.7 : 1,
+                    zIndex: isWalk ? 900 : 1000,
+                    map: map.value,
+                    showDir: !isWalk
+                  })
+                  polylines.push(polyline)
+
+                  // 为火车路段添加文本标签
+                  if ((mode === 'TRAIN' || seg.railway) && lineName) {
+                    const text = new AMapInstance.value.Text({
+                      text: `🚄 ${lineName}`,
+                      position: segPath[Math.floor(segPath.length / 2)],
+                      offset: new AMapInstance.value.Pixel(0, -20),
+                      style: {
+                        'background-color': modeColors.railway,
+                        'border-color': '#fff',
+                        'color': '#fff',
+                        'font-size': '12px',
+                        'padding': '2px 6px',
+                        'border-radius': '4px'
+                      },
+                      map: map.value
+                    })
+                    polylines.push(text)
+                  }
+                }
               })
+              
+              if (details.length > 0) {
+                segmentDetails.value[i] = details.join(' → ')
+              } else {
+                segmentDetails.value[i] = '公交/地铁'
+              }
+              travelTimes.value[i] = transit.cost ? `约 ${Math.ceil(transit.cost / 60)} 分钟` : '计算中'
+              return true
             }
           }
+          
+          // 如果未找到路线方案，兜底
+          console.warn(`第 ${i+1} 段: ${currentMode} 规划无结果，尝试使用驾车模式兜底...`)
+          return await performSearch('driving', true)
+        } catch (error) {
+          console.error(`第 ${i+1} 段: 解析异常`, error)
+          return await performSearch('driving', true)
+        }
+      }
 
-          if (path && path.length > 0) {
-            const duration = routeData.time ? Math.ceil(routeData.time / 60) : 0
-            travelTimes.value[i] = duration > 0 ? `约 ${duration} 分钟` : '实时计算中'
+      return new Promise((resolve) => {
+        currentCalc.search(start, end, (status: string, result: any) => {
+          console.log(`第 ${i+1} 段: 返回状态 (${currentMode}) -> ${status}`, result?.info ? `(Info: ${result.info})` : '')
+          
+          let hasPathData = false
+          if (status === 'complete' && result) {
+            const route = result.routes?.[0] || result.rides?.[0]
+            hasPathData = !!(route && (
+              (route.path && route.path.length > 0) || 
+              (route.steps && route.steps.length > 0) ||
+              (route.rides && route.rides.length > 0)
+            ))
+          }
 
-            // 2. 转换坐标为 LngLat 对象数组
-            const lngLats = path.map(p => {
-              let lng, lat;
-              if (Array.isArray(p)) {
-                lng = p[0]; lat = p[1];
-              } else if (p.getLng && typeof p.getLng === 'function') {
-                lng = p.getLng(); lat = p.getLat();
-              } else if (p.lng && p.lat) {
-                lng = p.lng; lat = p.lat;
-              } else {
-                lng = p[0]; lat = p[1];
-              }
-              return new AMap.LngLat(Number(lng), Number(lat));
-            });
-
-            // 3. 创建折线并显式添加到地图
+          if (hasPathData) {
             try {
-              const polyline = new AMap.Polyline({
-                path: lngLats,
-                strokeColor: modeColors[mode] || '#409EFF',
-                strokeWeight: 8,
-                strokeOpacity: 1,
-                lineJoin: 'round',
-                lineCap: 'round',
-                zIndex: 1000,
-                showDir: true
-              })
+              const route = result.routes?.[0] || result.rides?.[0]
+              let path: any[] = []
+              if (route.path?.length > 0) path = route.path
+              else if (route.steps) route.steps.forEach((s: any) => s.path && path.push(...s.path))
+              else if (route.rides) route.rides.forEach((r: any) => r.path && path.push(...r.path))
 
-              map.value.add(polyline)
-              polylines.push(polyline)
-              console.log(`第 ${i+1} 段路径绘制成功, 点数: ${lngLats.length}, 模式: ${mode}`)
-            } catch (err) {
-              console.error(`第 ${i+1} 段折线创建失败:`, err)
+              if (path.length > 0) {
+                const lngLats = path.map(p => new AMapInstance.value.LngLat(p.lng || p[0], p.lat || p[1]))
+                const polyline = new AMapInstance.value.Polyline({
+                  path: lngLats,
+                  strokeColor: modeColors[currentMode] || '#409EFF',
+                  strokeWeight: 8,
+                  map: map.value,
+                  showDir: true,
+                  zIndex: 1000
+                })
+                polylines.push(polyline)
+                travelTimes.value[i] = route.time ? `约 ${Math.ceil(route.time / 60)} 分钟` : '计算中'
+                
+                const modeMap: any = { driving: '驾车', walking: '步行', cycling: '骑行' }
+                segmentDetails.value[i] = modeMap[currentMode] || ''
+              }
+              resolve(true)
+            } catch (e) {
+              console.error(`第 ${i+1} 段: 解析异常`, e)
+              resolve(false)
             }
           } else {
-            console.error(`第 ${i+1} 段 (${mode}) 规划成功但未解析到有效轨迹点`, result)
+            if (!isFallback && currentMode !== 'driving') {
+              console.warn(`第 ${i+1} 段: ${currentMode} 规划无结果 (${result.info})，尝试使用驾车模式兜底...`)
+              performSearch('driving', true).then(resolve)
+            } else {
+              console.warn(`第 ${i+1} 段: 所有规划模式均失败，绘制直线距离线段`)
+              const directLine = new AMapInstance.value.Polyline({
+                path: [start, end],
+                strokeColor: '#FF4D4F',
+                strokeWeight: 4,
+                strokeStyle: 'dashed',
+                strokeOpacity: 0.6,
+                map: map.value,
+                zIndex: 800
+              })
+              polylines.push(directLine)
+              travelTimes.value[i] = '建议自行导航'
+              resolve(true)
+            }
           }
-        } else {
-          travelTimes.value[i] = '规划失败'
-          console.error(`第 ${i+1} 段规划失败 (${mode}):`, status, result)
-        }
-        resolve(true)
+        })
       })
-    })
+    }
+
+    await performSearch(mode)
   }
 }
 
@@ -652,7 +919,27 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 4px 0;
-  border-bottom: 1px dashed var(--el-color-primary-light-7);
+}
+
+.compact-travel-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  padding-left: 20px;
+  margin-bottom: 4px;
+  border-left: 1px dashed var(--el-color-primary-light-5);
+  margin-left: 10px;
+}
+
+.compact-travel-info .mode-icon {
+  font-size: 12px;
+}
+
+.compact-travel-info .details {
+  font-size: 10px;
+  opacity: 0.8;
 }
 
 .compact-item.is-departure {
@@ -809,7 +1096,27 @@ onUnmounted(() => {
 .mode-display {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.mode-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.mode-text .time {
+  font-weight: bold;
+}
+
+.mode-text .details {
+  font-size: 10px;
+  color: var(--el-text-color-secondary);
+  white-space: normal; /* 允许换行以显示更全的火车信息 */
+  word-break: break-all;
+  max-width: 260px; /* 增加宽度限制 */
+  margin-top: 2px;
 }
 
 .mode-display .el-icon {
@@ -820,9 +1127,57 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.map-container {
+.map-container-wrapper {
   flex: 1;
   height: 100%;
+  position: relative;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: var(--el-bg-color);
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--el-border-color-light);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+}
+
+.legend-line {
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.legend-icon {
+  font-size: 16px;
+  color: var(--el-text-color-secondary);
+}
+
+.legend-text {
+  font-weight: 500;
+}
+
+html.dark .map-legend {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-footer {

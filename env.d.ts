@@ -34,6 +34,7 @@ declare module '*.svg' {
 interface ImportMetaEnv {
   readonly VITE_AMAP_KEY: string
   readonly VITE_AMAP_SECURITY_CODE: string
+  readonly VITE_AMAP_WEB_KEY?: string
 }
 
 interface ImportMeta {
