@@ -297,6 +297,7 @@ import { ref, nextTick, onMounted, onUnmounted, computed, watch } from 'vue'
 import { Loading, User, ChatDotRound, Picture, CircleClose, Memo, Plus, CopyDocument, Edit, Delete as DeleteIcon } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 import agentIcon from '../assets/agent_icon.jpg'
 import { useChatStore } from '../stores/chatStore'
@@ -378,6 +379,46 @@ const uploadedImageUrl = ref('')
 const uploadedFileId = ref('')
 const isUploadingImage = ref(false)
 
+const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const result = e.target?.result
+    if (typeof result === 'string') {
+      resolve(result)
+      return
+    }
+    reject(new Error('图片读取失败'))
+  }
+  reader.onerror = () => reject(new Error('图片读取失败'))
+  reader.readAsDataURL(file)
+})
+
+const removeUploadedImage = () => {
+  if (uploadedImageUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(uploadedImageUrl.value)
+  }
+  uploadedImageUrl.value = ''
+  uploadedFileId.value = ''
+}
+
+const getOrCreateCozeUserId = () => {
+  let userId = localStorage.getItem('coze_user_id')
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).slice(2, 11)
+    localStorage.setItem('coze_user_id', userId)
+  }
+  return userId
+}
+
+const extractResponseText = (payload: any) => {
+  return payload?.choices?.[0]?.message?.content
+    || payload?.choices?.[0]?.delta?.content
+    || payload?.data?.content
+    || payload?.message?.content
+    || payload?.content
+    || ''
+}
+
 const handleFileChange = async (file: any) => {
   const rawFile = file.raw
   if (!rawFile) return
@@ -392,36 +433,28 @@ const handleFileChange = async (file: any) => {
   const { imageMode } = apiSettings.value
   
   if (imageMode === 'coze') {
-    // 生成预览
-    uploadedImageUrl.value = URL.createObjectURL(rawFile)
-    // 自动上传到 Coze
-    await uploadImageToCoze(rawFile)
+    try {
+      uploadedImageUrl.value = await readFileAsDataUrl(rawFile)
+      await uploadImageToCoze(rawFile)
+    } catch (error: any) {
+      console.error('处理 Coze 图片失败:', error)
+      removeUploadedImage()
+      ElMessage.error(error.message || '图片处理失败')
+    }
   } else {
     // Base64 模式 (适配硅基流动等)
     isUploadingImage.value = true
     try {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string
-        uploadedImageUrl.value = base64
-        uploadedFileId.value = base64 // 在 base64 模式下，直接存 base64 字符串
-        ElMessage.success('图片已就绪')
-        isUploadingImage.value = false
-      }
-      reader.onerror = () => {
-        throw new Error('图片读取失败')
-      }
-      reader.readAsDataURL(rawFile)
+      const base64 = await readFileAsDataUrl(rawFile)
+      uploadedImageUrl.value = base64
+      uploadedFileId.value = base64 // 在 base64 模式下，直接存 base64 字符串
+      ElMessage.success('图片已就绪')
     } catch (error: any) {
       ElMessage.error(error.message)
+    } finally {
       isUploadingImage.value = false
     }
   }
-}
-
-const removeUploadedImage = () => {
-  uploadedImageUrl.value = ''
-  uploadedFileId.value = ''
 }
 
 const uploadImageToCoze = async (file: File) => {
@@ -599,7 +632,7 @@ const formatAssistantMessage = (text: string): string => {
   if (!text) return ''
   // 移除地图数据标签后再渲染，避免显示原始标签
   const cleanText = text.replace(/\[MAP_DATA\][\s\S]*?\[\/MAP_DATA\]/g, '').trim()
-  return md.render(cleanText)
+  return DOMPurify.sanitize(md.render(cleanText))
 }
 
 const hasMapData = (text: string) => {
@@ -724,8 +757,9 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
   if (currentAbortController) {
     currentAbortController.abort()
   }
-  currentAbortController = new AbortController()
-  const signal = currentAbortController.signal
+  const abortController = new AbortController()
+  currentAbortController = abortController
+  const signal = abortController.signal
 
   // 如果是隐藏发送（如画像），则不将其直接推入对话列表，但需要包含在请求中
   const currentMessages = [...messages.value]
@@ -786,6 +820,18 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         contentList.push({ type: 'image', file_id: currentFileId })
       }
 
+      const additionalMessages = requestMessages.slice(0, -1).map(message => ({
+        role: message.role,
+        content: message.content,
+        content_type: 'text'
+      }))
+
+      additionalMessages.push({
+        role: 'user',
+        content: JSON.stringify(contentList),
+        content_type: 'object_string'
+      })
+
       const response = await fetch(`${finalBaseURL}/v3/chat`, {
         method: 'POST',
         headers: {
@@ -794,12 +840,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         },
         body: JSON.stringify({
           bot_id: botId,
-          user_id: 'user_' + Math.random().toString(36).substr(2, 9),
-          additional_messages: [{
-            role: 'user',
-            content: JSON.stringify(contentList),
-            content_type: 'object_string'
-          }],
+          user_id: getOrCreateCozeUserId(),
+          additional_messages: additionalMessages,
           stream: true
         }),
         signal
@@ -820,45 +862,63 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          if (buffer.trim() && !aiContent) {
+            try {
+              const fallbackData = JSON.parse(buffer.trim())
+              if (fallbackData.error || (typeof fallbackData.code !== 'undefined' && fallbackData.code !== 0)) {
+                throw new Error(`接口隐式报错: ${JSON.stringify(fallbackData)}`)
+              }
+              aiContent = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
+              newMessages[assistantMsgIndex].content = aiContent
+              chatStore.updateMessages(newMessages)
+            } catch (err: any) {
+              console.warn('尝试非流式兜底解析失败:', err, buffer)
+            }
+          }
+          break
+        }
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        // 保留最后一行（可能是残缺的）
         buffer = lines.pop() || ''
 
         for (const line of lines) {
           const trimmedLine = line.trim()
           if (!trimmedLine) continue
           
-          // 按照设计文档解析 SSE 格式
           if (trimmedLine.startsWith('event:')) {
             currentEvent = trimmedLine.slice(6).trim()
           } else if (trimmedLine.startsWith('data:')) {
             const dataContent = trimmedLine.slice(5).trim()
+            if (dataContent === '[DONE]') continue
             if (!dataContent) continue
 
             try {
               const data = JSON.parse(dataContent)
               
-              // 根据文档，核心关注 conversation.message.delta 事件
-              if (currentEvent === 'conversation.message.delta') {
-                // data 中包含具体的消息片段
-                // 注意：Coze v3 的 delta 数据可能直接在 data 根部，也可能在 data.content
-                const delta = data.content || (data.message && data.message.content)
+              if (
+                currentEvent === 'conversation.message.delta'
+                || currentEvent === 'conversation.message.completed'
+                || !currentEvent
+              ) {
+                const delta = data.content || data.message?.content || data.choices?.[0]?.delta?.content || ''
                 if (delta) {
+                  if (currentEvent === 'conversation.message.completed' && aiContent.includes(delta)) {
+                    continue
+                  }
                   aiContent += delta
                   newMessages[assistantMsgIndex].content = aiContent
                   chatStore.updateMessages(newMessages)
                   scrollToBottom()
                 }
-              } else if (currentEvent === 'error' || data.event === 'error') {
+              } else if (currentEvent === 'error' || data.event === 'error' || data.code !== 0) {
                 const errorMsg = data.msg || data.message || JSON.stringify(data)
                 throw new Error(`AI 流式错误: ${errorMsg}`)
               }
             } catch (e: any) {
               if (e.message.includes('AI 流式错误')) throw e
-              // 忽略其他非 JSON 数据行
+              console.warn('JSON 片段解析失败，可能并非错误:', e.message, dataContent)
             }
           }
         }
@@ -909,7 +969,22 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       let buffer = ''
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          if (buffer.trim() && !aiContent) {
+            try {
+              const fallbackData = JSON.parse(buffer.trim())
+              if (fallbackData.error || (typeof fallbackData.code !== 'undefined' && fallbackData.code !== 0)) {
+                throw new Error(`接口隐式报错: ${JSON.stringify(fallbackData)}`)
+              }
+              aiContent = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
+              newMessages[assistantMsgIndex].content = aiContent
+              chatStore.updateMessages(newMessages)
+            } catch (err: any) {
+              console.warn('尝试 OpenAI 兼容接口的非流式兜底解析失败:', err, buffer)
+            }
+          }
+          break
+        }
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
@@ -931,8 +1006,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
               chatStore.updateMessages(newMessages)
               scrollToBottom()
             }
-          } catch (e) {
-            // 忽略非 JSON 行
+          } catch (e: any) {
+            console.warn('OpenAI 兼容接口 JSON 片段解析失败，可能并非错误:', e.message, dataStr)
           }
         }
       }
@@ -984,6 +1059,11 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     }
     
   } catch (error: any) {
+    if (error?.name === 'AbortError' || String(error?.message || '').toLowerCase().includes('abort')) {
+      console.log('用户中断了上一次请求')
+      return
+    }
+    console.error('发送消息失败:', error)
     let errorMsg = error?.message || String(error)
     if (errorMsg === 'Failed to fetch' || error?.name === 'TypeError') {
       errorMsg = '网络连接中断，请检查网络设置或尝试重新发送。'
@@ -992,7 +1072,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     chatStore.updateMessages(newMessages)
   } finally {
     isLoading.value = false
-    if (currentAbortController) {
+    if (currentAbortController === abortController) {
       currentAbortController = null
     }
     await scrollToBottom()
@@ -1030,6 +1110,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (currentAbortController) {
+    currentAbortController.abort()
+    currentAbortController = null
+  }
+  removeUploadedImage()
   window.removeEventListener('resize', checkMobile)
 })
 

@@ -270,7 +270,7 @@ const MANUAL_API_SETTINGS = {
   // provider 可选：openai / siliconflow / zhipu / qwen / coze / custom
   provider: 'coze',
   baseURL: 'https://api.coze.cn',
-  apiKey: 'pat_dwOqipNExoqRFtk4RkKhyj3IkxvaMPU2ozUrle8yvhleoJe6OCIEXWVvfbCH4GlA',
+  apiKey: 'pat_PuFut51HbPNTMyzmV1V2LpizEeqtEw4wmaJUrmyO6hqZcGf7sei0YArmt7ktG7jj',
   botId: '7622230218706731042',
   model: '',
   imageMode: 'coze'
