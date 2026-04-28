@@ -820,9 +820,30 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
     let aiContent = ''
 
     const cleanFastGPTTail = (text: string) => {
-      // 过滤掉 FastGPT 等中转可能在末尾塞入的调试 JSON 字符串
-      return text.replace(/(?:\n*\{"msg_type".*?\})+$/g, '')
-                 .replace(/(?:\n*\{"finish_reason".*?\})+$/g, '')
+      // 过滤掉 FastGPT 等中转可能在末尾塞入的各类调试 JSON 字符串
+      let cleaned = text
+      
+      // 循环剥离末尾的 JSON 对象，直到末尾没有能匹配的 JSON 为止
+      let previous = ''
+      while (cleaned !== previous) {
+        previous = cleaned
+        // 匹配常见的附加数据类型
+        cleaned = cleaned.replace(/(?:\n*\{"msg_type"[\s\S]*?\})+$/g, '')
+        cleaned = cleaned.replace(/(?:\n*\{"finish_reason"[\s\S]*?\})+$/g, '')
+        cleaned = cleaned.replace(/(?:\n*\{"msg_type":"generate_answer_finish"[\s\S]*?\})+$/g, '')
+        
+        // 尝试匹配紧贴在末尾的任何合法形式的、且带有 msg_type 或 finish_reason 关键字的 JSON 对象
+        cleaned = cleaned.replace(/\n*\{[^{}]*?(?:"msg_type"|"finish_reason")[^{}]*?\}$/g, '')
+        
+        // 针对非常脏的嵌套或连续的 JSON 数据块（比如由于 Electron 把多段 SSE 事件合并导致）
+        cleaned = cleaned.replace(/(?:\n*\{[^{}]*?"data"[^{}]*?\})+$/g, '')
+      }
+      
+      // 最后一个兜底：如果有大块的非正常人类文本特征的结尾 JSON 块，尝试移除
+      cleaned = cleaned.replace(/\n*\{"msg_type".*$/, '')
+      cleaned = cleaned.replace(/\n*\{"finish_reason".*$/, '')
+      
+      return cleaned.trim()
     }
 
     const waitForPaint = async () => {
