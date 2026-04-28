@@ -882,8 +882,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-          'Cache-Control': 'no-cache'
+          'Accept': 'text/event-stream'
         },
         body: JSON.stringify({
           bot_id: botId,
@@ -990,8 +989,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
-          'Accept': 'text/event-stream',
-          'Cache-Control': 'no-cache'
+          'Accept': 'text/event-stream'
         },
         body: JSON.stringify({
           model: model,
