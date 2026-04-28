@@ -430,9 +430,10 @@ const handleFileChange = async (file: any) => {
   }
 
   // 根据模式处理图片
-  const { imageMode } = apiSettings.value
+  const { imageMode, provider, baseURL } = apiSettings.value
+  const isCoze = provider === 'coze' || imageMode === 'coze' || (baseURL && (baseURL.includes('coze.cn') || baseURL.includes('coze.com')))
   
-  if (imageMode === 'coze') {
+  if (isCoze) {
     try {
       uploadedImageUrl.value = await readFileAsDataUrl(rawFile)
       await uploadImageToCoze(rawFile)
@@ -806,12 +807,56 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
       throw new Error('API 地址不能为空，请在设置中配置正确的 API 地址')
     }
 
-    // 格式化 URL
-    finalBaseURL = finalBaseURL.replace(/\/+$/, '').replace(/\/v3\/chat$/, '')
+    // 格式化 URL，移除可能误填的具体接口路径
+    finalBaseURL = finalBaseURL.replace(/\/+$/, '').replace(/\/v3\/chat$/, '').replace(/\/chat\/completions$/, '')
+    
+    const isCoze = provider === 'coze' || imageMode === 'coze' || finalBaseURL.includes('coze.cn') || finalBaseURL.includes('coze.com')
+
+    // 兼容漏填 /v1 的情况（仅针对非 Coze 的标准 OpenAI 接口）
+    if (!isCoze && !finalBaseURL.endsWith('/v1') && (finalBaseURL.includes('siliconflow.cn') || finalBaseURL.includes('openai.com'))) {
+      finalBaseURL += '/v1'
+    }
 
     let aiContent = ''
 
-    if (imageMode === 'coze') {
+    const cleanFastGPTTail = (text: string) => {
+      // 过滤掉 FastGPT 等中转可能在末尾塞入的调试 JSON 字符串
+      return text.replace(/(?:\n*\{"msg_type".*?\})+$/g, '')
+                 .replace(/(?:\n*\{"finish_reason".*?\})+$/g, '')
+    }
+
+    const waitForPaint = async () => {
+      await nextTick()
+      await new Promise(resolve => {
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => resolve(null))
+          return
+        }
+        setTimeout(() => resolve(null), 16)
+      })
+    }
+
+    const renderAssistantContent = async (content: string) => {
+      newMessages[assistantMsgIndex].content = cleanFastGPTTail(content)
+      chatStore.updateMessages(newMessages)
+      await waitForPaint()
+      await scrollToBottom()
+    }
+
+    const appendWithTypewriter = async (delta: string) => {
+      if (!delta) return
+
+      // Electron 中即便拿到整块响应，也强制按字符/双字符逐帧渲染。
+      const step = delta.length > 240 ? 2 : 1
+
+      for (let i = 0; i < delta.length; i += step) {
+        aiContent += delta.slice(i, i + step)
+        await renderAssistantContent(aiContent)
+        await new Promise(resolve => setTimeout(resolve, 18))
+      }
+    }
+
+    if (isCoze) {
       if (!botId) throw new Error('Coze 模式下必须配置 Bot ID')
       
       // 构建 Coze 多模态内容 (object_string)
@@ -836,7 +881,9 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache'
         },
         body: JSON.stringify({
           bot_id: botId,
@@ -869,9 +916,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
               if (fallbackData.error || (typeof fallbackData.code !== 'undefined' && fallbackData.code !== 0)) {
                 throw new Error(`接口隐式报错: ${JSON.stringify(fallbackData)}`)
               }
-              aiContent = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
-              newMessages[assistantMsgIndex].content = aiContent
-              chatStore.updateMessages(newMessages)
+              const fallbackText = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
+              await appendWithTypewriter(fallbackText)
             } catch (err: any) {
               console.warn('尝试非流式兜底解析失败:', err, buffer)
             }
@@ -907,12 +953,9 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
                   if (currentEvent === 'conversation.message.completed' && aiContent.includes(delta)) {
                     continue
                   }
-                  aiContent += delta
-                  newMessages[assistantMsgIndex].content = aiContent
-                  chatStore.updateMessages(newMessages)
-                  scrollToBottom()
+                  await appendWithTypewriter(delta)
                 }
-              } else if (currentEvent === 'error' || data.event === 'error' || data.code !== 0) {
+              } else if (currentEvent === 'error' || data.event === 'error' || (typeof data.code !== 'undefined' && data.code !== 0)) {
                 const errorMsg = data.msg || data.message || JSON.stringify(data)
                 throw new Error(`AI 流式错误: ${errorMsg}`)
               }
@@ -946,7 +989,9 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache'
         },
         body: JSON.stringify({
           model: model,
@@ -958,7 +1003,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        throw new Error(`API 错误: ${response.status} ${JSON.stringify(errData)}`)
+        throw new Error(`API 错误: ${response.status} ${JSON.stringify(errData)} (请求地址: ${finalBaseURL}/chat/completions)`)
       }
 
       const reader = response.body?.getReader()
@@ -976,9 +1021,8 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
               if (fallbackData.error || (typeof fallbackData.code !== 'undefined' && fallbackData.code !== 0)) {
                 throw new Error(`接口隐式报错: ${JSON.stringify(fallbackData)}`)
               }
-              aiContent = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
-              newMessages[assistantMsgIndex].content = aiContent
-              chatStore.updateMessages(newMessages)
+              const fallbackText = extractResponseText(fallbackData) || JSON.stringify(fallbackData)
+              await appendWithTypewriter(fallbackText)
             } catch (err: any) {
               console.warn('尝试 OpenAI 兼容接口的非流式兜底解析失败:', err, buffer)
             }
@@ -1001,10 +1045,7 @@ const sendMessage = async (text: string, showUserMessage: boolean) => {
             const data = JSON.parse(dataStr)
             const delta = data.choices?.[0]?.delta?.content || ''
             if (delta) {
-              aiContent += delta
-              newMessages[assistantMsgIndex].content = aiContent
-              chatStore.updateMessages(newMessages)
-              scrollToBottom()
+              await appendWithTypewriter(delta)
             }
           } catch (e: any) {
             console.warn('OpenAI 兼容接口 JSON 片段解析失败，可能并非错误:', e.message, dataStr)
