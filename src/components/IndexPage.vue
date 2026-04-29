@@ -831,10 +831,14 @@ html.dark .parallax-overlay {
   position: relative;
   z-index: 2; /* 确保文字在背景之上 */
   font-size: 52px;
-  color: #3b94ec;
+  color: #151c65; /* 亮色模式主标题颜色 */
   margin-bottom: 20px;
   font-weight: bold;
   pointer-events: none;
+}
+
+html.dark .welcome-title {
+  color: #FFFFFF; /* 暗色模式主标题颜色 */
 }
 
 @media (max-width: 768px) {
@@ -889,9 +893,13 @@ html.dark .parallax-overlay {
   position: relative;
   z-index: 2;
   font-size: 24px;
-  color: #3b94ec;
+  color: rgba(21, 28, 101, 0.8); /* 亮色模式副标题颜色，比主标题略浅 */
   margin-bottom: 20px;
   pointer-events: none;
+}
+
+html.dark .welcome-subtitle {
+  color: rgba(255, 255, 255, 0.8); /* 暗色模式副标题颜色，比主标题略浅 */
 }
 
 .action-buttons {
